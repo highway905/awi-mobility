@@ -6,7 +6,7 @@ interface CustomerDetailsCardProps {
 
 export function CustomerDetailsCard({ details }: CustomerDetailsCardProps) {
   return (
-    <div className="border border-dashboard-border bg-white rounded-dashboard p-4" style={{ height: "128px" }}>
+    <div className="border border-dashboard-border bg-white rounded-dashboard p-4">
       <div className="grid grid-cols-4 gap-x-8 gap-y-2 h-full">
         {/* First Row */}
         <div>

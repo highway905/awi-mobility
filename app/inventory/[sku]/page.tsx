@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 import { InventoryDetailsPageContent } from "@/features/inventory/components/inventory-details-page-content"
-import { InventoryDetailsPageSkeleton } from "@/features/inventory/components/inventory-details-page-skeleton"
 
 interface InventoryDetailsPageProps {
   params: {
@@ -9,9 +8,10 @@ interface InventoryDetailsPageProps {
 }
 
 export default function InventoryDetailsPage({ params }: InventoryDetailsPageProps) {
+  console.log("InventoryDetailsPage", params)
   return (
-    <Suspense fallback={<InventoryDetailsPageSkeleton />}>
-      <InventoryDetailsPageContent sku={params.sku} />
+    <Suspense fallback={<></>}>
+      <InventoryDetailsPageContent />
     </Suspense>
   )
 }

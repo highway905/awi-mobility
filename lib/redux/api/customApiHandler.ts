@@ -39,20 +39,20 @@ axiosInstance.interceptors.response.use(
       }
 
       // Handle 404 Not Found
-      if (status === 404) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/not-found';
-        }
-        return Promise.reject(error);
-      }
+      // if (status === 404) {
+      //   if (typeof window !== 'undefined') {
+      //     window.location.href = '/not-found';
+      //   }
+      //   return Promise.reject(error);
+      // }
       
       // Handle 500 Server Error
-      if (status === 500) {
-        if (typeof window !== 'undefined') {
-          window.location.href = '/server-error';
-        }
-        return Promise.reject(error);
-      }
+      // if (status === 500) {
+      //   if (typeof window !== 'undefined') {
+      //     window.location.href = '/server-error';
+      //   }
+      //   return Promise.reject(error);
+      // }
 
       // Handle 401 Unauthorized - Token refresh
       const getUserData = getUserCred('userCred');

@@ -1,88 +1,489 @@
 "use client"
 
-import { useState } from "react"
-import { Search } from "lucide-react"
+import { useState, useCallback, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { Search, MoreHorizontal, Loader2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { InventoryTable } from "./inventory-table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { AdvancedTable, type AdvancedTableColumn } from "@/features/shared/components/advanced-table"
 import { Sidebar } from "@/components/layout/sidebar"
 import { PageHeader } from "@/features/shared/components/page-header"
 import { InventoryEmptyState } from "./inventory-empty-state"
 import { InventoryColumnCustomizationSheet } from "./inventory-column-customization-sheet"
 import { InventoryFilterSheet } from "./inventory-filter-sheet"
-import { mockInventoryData, calculateTotals } from "../mocks/inventory-data"
-import type { InventoryFilters } from "../types"
+import { useCustomerCache } from "@/hooks/useCustomerCache"
+import { useInventoryData, type InventoryItem } from "../hooks/use-inventory-data"
+import { isEmpty } from "lodash"
 
 const breadcrumbItems = [{ label: "Home", href: "/dashboard" }, { label: "Real Time Inventory" }]
 
-export function InventoryPageContent() {
-  const [filters, setFilters] = useState<InventoryFilters>({
-    customer: "",
-    search: "",
+export const filterToPayload = (filter: any) => {
+  const payload = { ...filter }
+  Object.entries(payload)?.forEach(([key, value]: [string, any]) => {
+    if (Array.isArray(value)) payload[key] = value.map((v) => v?.id)
+    else if (value?.id !== undefined) payload[key] = value?.id
   })
+  return payload
+}
+
+export const inPast = (n: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() + 1 - n)
+  return d
+}
+
+export const dateFrom = inPast(240)
+dateFrom.setHours(0, 0, 0, 0)
+
+export const dateCurrent = new Date()
+dateCurrent.setHours(23, 59, 59, 999)
+
+export const defaultInventoryFilter = {
+  pageIndex: 1,
+  pageSize: 20,
+  searchKey: "",
+  sortColumn: "",
+  sortDirection: "",
+  fromDate: dateFrom.toISOString(),
+  toDate: dateCurrent.toISOString(),
+  customerId: "",
+  locationId: "",
+  warehouseId: "",
+  sku: "",
+  palletId: "",
+  status: "",
+}
+
+export function InventoryPageContent() {
+  const { push } = useRouter()
+
+  // Initialize from localStorage if available
+  const [searchTrigger, setSearchTrigger] = useState(0)
+  const storedFilter = typeof window !== "undefined" ? localStorage.getItem("inventoryListFilter") : null
+  const parsedFilter = storedFilter ? JSON.parse(storedFilter) : null
+
+  // Initialize filters state from localStorage
+  const [filters, setFilters] = useState<any>(() => {
+    if (!isEmpty(parsedFilter)) {
+      return {
+        customer: parsedFilter.customerId || "",
+        search: parsedFilter.searchKey || "",
+      }
+    }
+    return {
+      customer: "",
+      search: "",
+    }
+  })
+
   const [columnSheetOpen, setColumnSheetOpen] = useState(false)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const filteredData = mockInventoryData.filter((item) => {
-    if (filters.search) {
-      return item.sku.toLowerCase().includes(filters.search.toLowerCase())
+  const [filter, setFilter] = useState<any>(
+    !isEmpty(parsedFilter) ? { ...parsedFilter, sortColumn: "", sortDirection: "" } : { ...defaultInventoryFilter },
+  )
+
+  // Use custom hooks
+  // const { filters, updateFilter, setFilters } = useInventoryFilters("inventoryListFilter")
+
+  // Initialize filter state
+  // const [filter, setFilter] = useState<any>(() => {
+  //   const storedFilter = typeof window !== "undefined" ? localStorage.getItem("inventoryListFilter") : null
+  //   const parsedFilter = storedFilter ? JSON.parse(storedFilter) : null
+
+  //   return parsedFilter && Object.keys(parsedFilter).length > 0
+  //     ? { ...parsedFilter, sortColumn: "", sortDirection: "", searchKey: filters.search || "" }
+  //     : { ...defaultInventoryFilter, searchKey: filters.search || "" }
+  // })
+
+  // Use cached customer data
+  const {
+    customers: customerList,
+    isLoading: isLoadingCustomers,
+    isFetching: isFetchingCustomers,
+    error: customerError,
+    isUsingCache,
+    refreshCache,
+    cacheAge,
+  } = useCustomerCache()
+
+  // Sync customer selection after customers are loaded
+  useEffect(() => {
+    if (customerList.length > 0 && parsedFilter?.customerId && !filters.customer) {
+      const customerExists = customerList.find((customer) => customer.id === parsedFilter.customerId)
+      if (customerExists) {
+        setFilters((prev) => ({
+          ...prev,
+          customer: parsedFilter.customerId,
+        }))
+      }
     }
-    return true
-  })
+  }, [customerList, parsedFilter?.customerId, filters.customer])
 
-  const totals = calculateTotals(filteredData)
-  const showTable = filters.customer !== "" && filters.customer !== "default"
+  // Update filter when search changes
+  useEffect(() => {
+    if (filters.search !== filter.searchKey) {
+      setFilter((prev) => ({
+        ...prev,
+        searchKey: filters.search,
+        pageIndex: 1,
+      }))
+      setSearchTrigger((prev) => prev + 1)
+    }
+  }, [filters.search, filter.searchKey])
 
-  const handleFiltersChange = (newFilters: any) => {
-    // Apply additional filters from filter sheet
+  // Update filter when customer changes
+  useEffect(() => {
+    if (filters.customer !== filter.customerId) {
+      setFilter((prev) => ({
+        ...prev,
+        customerId: filters.customer,
+        pageIndex: 1,
+      }))
+      setSearchTrigger((prev) => prev + 1)
+    }
+  }, [filters.customer, filter.customerId])
+
+  // Create the API payload
+  const apiPayload = useMemo(() => filterToPayload(filter), [filter])
+
+  // Determine if we should make API call
+  const shouldFetchData = filters.customer && filters.customer !== "" && filters.customer !== "default"
+
+  // Use inventory data hook
+  const {
+    items: inventoryItems,
+    totalCount,
+    hasNextPage,
+    isLoading,
+    isLoadingMore,
+    fetchNextPage,
+    resetPagination,
+  } = useInventoryData(apiPayload, shouldFetchData)
+
+  // Handle bulk actions
+  // const handleBulkAction = useCallback(async (action: string, selectedRows: InventoryItem[]) => {
+  //   const itemIds = selectedRows.map((item) => item.id)
+
+  //   try {
+  //     switch (action) {
+  //       case "export":
+  //         console.log("Exporting inventory items:", itemIds)
+  //         break
+  //       case "adjust":
+  //         console.log("Adjusting inventory for items:", itemIds)
+  //         break
+  //       case "update-location":
+  //         console.log("Updating location for items:", itemIds)
+  //         break
+  //       default:
+  //         console.log("Bulk action:", action, selectedRows)
+  //     }
+  //   } catch (error) {
+  //     console.error("Bulk action failed:", error)
+  //   }
+  // }, [])
+
+  const handleRowClick = useCallback(
+    (item: InventoryItem) => {
+      console.log("Item clicked:", item)
+      push(`/inventory/${encodeURIComponent(item.sku)}?id=${encodeURIComponent(item.id)}`)
+    },
+    [push],
+  )
+
+  const handleFiltersChange = useCallback((newFilters: any) => {
     console.log("Applying filters:", newFilters)
+    setFilter((prev) => ({
+      ...prev,
+      ...newFilters,
+      pageIndex: 1,
+    }))
+    setSearchTrigger((prev) => prev + 1)
+  }, [])
+
+  // Handle customer selection change
+  const handleCustomerChange = (value: string) => {
+    console.log("Customer selected:", value)
+
+    // Update both filter states
+    setFilters((prev) => ({
+      ...prev,
+      customer: value,
+      search: value === "" || value === "default" ? "" : prev.search,
+    }))
+
+    // Update the main filter object
+    setFilter((prev) => ({
+      ...prev,
+      customerId: value,
+      searchKey: value === "" || value === "default" ? "" : prev.searchKey,
+      pageIndex: 1,
+    }))
   }
 
+  // Save filter to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("inventoryListFilter", JSON.stringify(filter))
+    }
+  }, [filter])
+
+  // Get selected customer name for display
+  const getSelectedCustomerName = () => {
+    if (!filters.customer || filters.customer === "" || filters.customer === "default") {
+      return null
+    }
+
+    const selectedCustomer = customerList.find((customer) => customer.id === filters.customer)
+    return selectedCustomer ? selectedCustomer.customerName : null
+  }
+
+  const showCustomerColumns = filters.customer !== "" && filters.customer !== "default"
+  const showTable = filters.customer !== "" && filters.customer !== "default"
+
+  // Actions dropdown component
+  const ActionsDropdown = ({ item }: { item: InventoryItem }) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() => push(`/inventory/${encodeURIComponent(item.sku)}?id=${encodeURIComponent(item.id)}`)}
+        >
+          View Details
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => console.log("Edit inventory for", item.sku)}>Edit Inventory</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => console.log("Adjust stock for", item.sku)}>Adjust Stock</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  // Define columns based on customer selection
+  const columns: AdvancedTableColumn<InventoryItem>[] = useMemo(
+    () => [
+      {
+        key: "sku",
+        header: "SKU",
+        render: (value: string) => <span className="font-medium text-blue-600">{value}</span>,
+        sortable: true,
+        minWidth: 120,
+      },
+      ...(showCustomerColumns
+        ? []
+        : [
+            {
+              key: "warehouse" as keyof InventoryItem,
+              header: "Warehouse",
+              render: (value: string) => <span className="text-gray-900">{value}</span>,
+              sortable: true,
+              minWidth: 100,
+            },
+          ]),
+      {
+        key: "location",
+        header: "Location",
+        render: (value: string) => <span className="text-gray-700">{value}</span>,
+        sortable: true,
+        minWidth: showCustomerColumns ? 150 : 150,
+      },
+      {
+        key: "palletId",
+        header: "Pallet ID",
+        render: (value: string) => <span className="text-gray-700">{value}</span>,
+        sortable: true,
+        minWidth: 100,
+      },
+      {
+        key: "inbound",
+        header: "Inbound",
+        render: (value: number) => <span className="text-right font-medium">{value}</span>,
+        sortable: true,
+        minWidth: 80,
+      },
+      {
+        key: "outbound",
+        header: "Outbound",
+        render: (value: number) => <span className="text-right font-medium">{value}</span>,
+        sortable: true,
+        minWidth: 80,
+      },
+      {
+        key: "adjustment",
+        header: "Adjustment",
+        render: (value: number) => <span className="text-right font-medium">{value}</span>,
+        sortable: true,
+        minWidth: 100,
+      },
+      {
+        key: "onHand",
+        header: "On Hand",
+        render: (value: number) => <span className="text-right font-medium">{value}</span>,
+        sortable: true,
+        minWidth: 80,
+      },
+      ...(showCustomerColumns
+        ? [
+            {
+              key: "available" as keyof InventoryItem,
+              header: "Available",
+              render: (value: number) => <span className="text-right font-medium">{value || 0}</span>,
+              sortable: true,
+              minWidth: 80,
+            },
+            {
+              key: "onHold" as keyof InventoryItem,
+              header: "On Hold",
+              render: (value: number) => <span className="text-right font-medium">{value || 0}</span>,
+              sortable: true,
+              minWidth: 80,
+            },
+          ]
+        : []),
+      {
+        key: "actions",
+        header: "",
+        render: (_, item: InventoryItem) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            <ActionsDropdown item={item} />
+          </div>
+        ),
+        sortable: false,
+        minWidth: 50,
+      },
+    ],
+    [showCustomerColumns, push],
+  )
+
+  // Calculate footer data
+  const footerData = useMemo(
+    () => ({
+      sku: `Total: ${totalCount || 0} items`,
+      warehouse: "",
+      location: "",
+      palletId: "",
+      inbound: inventoryItems.reduce((sum, item) => sum + item.inbound, 0),
+      outbound: inventoryItems.reduce((sum, item) => sum + item.outbound, 0),
+      adjustment: inventoryItems.reduce((sum, item) => sum + item.adjustment, 0),
+      onHand: inventoryItems.reduce((sum, item) => sum + item.onHand, 0),
+      available: showCustomerColumns ? inventoryItems.reduce((sum, item) => sum + (item.available || 0), 0) : undefined,
+      onHold: showCustomerColumns ? inventoryItems.reduce((sum, item) => sum + (item.onHold || 0), 0) : undefined,
+      actions: "",
+    }),
+    [inventoryItems, totalCount, showCustomerColumns],
+  )
+
+  // Debug effect to monitor state sync
+  useEffect(() => {
+    console.log("State sync check:", {
+      filtersCustomer: filters.customer,
+      filterCustomerId: filter.customerId,
+      shouldFetchData,
+      customerListLoaded: customerList.length > 0,
+    })
+  }, [filters.customer, filter.customerId, shouldFetchData, customerList.length])
+
   return (
-    <div className="bg-dashboard-background px-4">
+    <div className="h-screen flex flex-col bg-dashboard-background">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Page Header Section */}
-      <PageHeader
-        title="Real Time Inventory"
-        breadcrumbItems={breadcrumbItems}
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        action={
-          <div>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search SKU"
-                value={filters.search}
-                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                className="pl-10 w-64"
-              />
+      {/* Fixed Page Header Section */}
+      <div className="flex-shrink-0 px-4">
+        <PageHeader
+          title="Real Time Inventory"
+          breadcrumbItems={breadcrumbItems}
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          action={
+            <div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search SKU"
+                  value={filters.search}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                  className="pl-10 w-64"
+                  disabled={!showTable}
+                />
+              </div>
             </div>
-          </div>
-        }
-      />
+          }
+        />
+      </div>
 
-      {/* Filters Section */}
-      <div className="mb-dashboard-gap">
+      {/* Fixed Filters Section */}
+      <div className="flex-shrink-0 px-4 mb-4">
         <div className="flex items-center space-x-4">
-          <Select
-            value={filters.customer}
-            onValueChange={(value) => setFilters((prev) => ({ ...prev, customer: value }))}
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select Customer" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">Select Customer</SelectItem>
-              <SelectItem value="white-oak">White Oak</SelectItem>
-              <SelectItem value="customer-2">Customer 2</SelectItem>
-              <SelectItem value="customer-3">Customer 3</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center space-x-2">
+            <Select
+              value={filters.customer || ""}
+              onValueChange={handleCustomerChange}
+              disabled={isLoadingCustomers || isFetchingCustomers}
+            >
+              <SelectTrigger className="w-64">
+                <SelectValue placeholder="Select Customer">{getSelectedCustomerName()}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingCustomers || isFetchingCustomers ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2 text-blue-600" />
+                    <span className="text-sm text-gray-600">Loading customers...</span>
+                  </div>
+                ) : customerError ? (
+                  <div className="flex items-center justify-center py-6">
+                    <span className="text-sm text-red-500">Error loading customers</span>
+                  </div>
+                ) : (
+                  <>
+                    <SelectItem value="default">Select Customer</SelectItem>
+                    {customerList.length > 0 ? (
+                      customerList.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.customerName}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-center py-4">
+                        <span className="text-sm text-gray-500">No customers available</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </SelectContent>
+            </Select>
 
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded" onClick={() => setColumnSheetOpen(true)}>
+            {/* Cache status indicator and refresh button */}
+            {isUsingCache && (
+              <div className="flex items-center space-x-2">
+                {/* <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+                  Cached ({Math.floor(cacheAge / 1000)}s ago)
+                </span> */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={refreshCache}
+                  className="h-8 w-8 p-0"
+                  title="Refresh customer list"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded bg-transparent"
+            onClick={() => setColumnSheetOpen(true)}
+            disabled={!showTable}
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M14.5928 1.56665V14.4329H14.2061V1.56665H14.5928ZM10.3262 1.56665V14.4329H9.93945V1.56665H10.3262ZM6.05957 1.56665V14.4329H5.67285V1.56665H6.05957ZM1.79297 1.56665V14.4329H1.40625V1.56665H1.79297Z"
@@ -92,7 +493,13 @@ export function InventoryPageContent() {
             </svg>
           </Button>
 
-          <Button variant="outline" size="icon" className="h-9 w-9 rounded" onClick={() => setFilterSheetOpen(true)}>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded bg-transparent"
+            onClick={() => setFilterSheetOpen(true)}
+            disabled={!showTable}
+          >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 fillRule="evenodd"
@@ -105,12 +512,38 @@ export function InventoryPageContent() {
         </div>
       </div>
 
-      {/* Table Section */}
-      <div className="border border-dashboard-border bg-white rounded-dashboard">
+      {/* Flexible Table Section - Takes remaining space */}
+      <div className="flex-1 px-4 pb-4 min-h-0">
         {showTable ? (
-          <InventoryTable data={filteredData} totals={totals} showCustomerColumns={false} />
+          <AdvancedTable.Root
+            data={inventoryItems}
+            columns={columns}
+            onRowClick={handleRowClick}
+            enableBulkSelection={true}
+            // onBulkAction={handleBulkAction}
+            stickyColumns={{
+              left: ["sku"],
+              right: ["actions"],
+            }}
+            isLoading={isLoading}
+            emptyMessage={isLoading ? "Loading inventory..." : "No inventory items found matching your criteria"}
+          >
+            <AdvancedTable.Container
+              hasNextPage={hasNextPage}
+              fetchNextPage={fetchNextPage}
+              isFetchingNextPage={isLoadingMore}
+            >
+              <AdvancedTable.Table>
+                <AdvancedTable.Header />
+                <AdvancedTable.Body />
+                <AdvancedTable.Footer footerData={footerData} />
+              </AdvancedTable.Table>
+            </AdvancedTable.Container>
+          </AdvancedTable.Root>
         ) : (
-          <InventoryEmptyState />
+          <div className="h-full bg-white rounded-lg shadow-sm border border-gray-200">
+            <InventoryEmptyState />
+          </div>
         )}
       </div>
 

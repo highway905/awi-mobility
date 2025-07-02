@@ -5,7 +5,7 @@ import AuthGuard from "@/routes/AuthGuard"
 
 export default function OrdersPage() {
   return (
-    <Suspense fallback={<OrdersPageSkeleton />}>
+    <Suspense fallback={<></>}>
       <AuthGuard>
         <OrdersPageContent />
       </AuthGuard>

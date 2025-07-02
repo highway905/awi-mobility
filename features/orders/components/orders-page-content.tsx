@@ -316,7 +316,6 @@ export function OrdersPageContent() {
       render: (value: string) => <span className="font-medium text-blue-600">{value}</span>,
       sortable: true,
       minWidth: 140,
-      // sticky: 'left',
     },
     {
       key: "customer",
@@ -420,7 +419,28 @@ export function OrdersPageContent() {
       sortable: true,
       minWidth: 140,
     },
-   
+    {
+      key: "moveType",
+      header: "Move Type",
+      render: (value: string) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          value === 'Inbound' ? 'bg-blue-100 text-blue-800' : 
+          value === 'Outbound' ? 'bg-green-100 text-green-800' : 
+          'bg-gray-100 text-gray-800'
+        }`}>
+          {value || 'N/A'}
+        </span>
+      ),
+      sortable: true,
+      minWidth: 110,
+    },
+    {
+      key: "createdOn",
+      header: "Created On",
+      render: (value: string) => <span className="text-gray-700">{value}</span>,
+      sortable: true,
+      minWidth: 120,
+    },
   ]
 
   const handleRowClick = (order: Order) => {
@@ -434,58 +454,72 @@ export function OrdersPageContent() {
     }
   }, [filter]);
 
+  // Calculate footer data
+  const footerData = {
+    transactionId: `Total: ${ordersData?.totalCount || 0} orders`,
+    customer: '',
+    orderType: '',
+    referenceId: '',
+    channel: '',
+    appointmentDate: '',
+    status: `${orders.filter(o => o.status === 'Completed').length} completed`,
+    moveType: `${orders.filter(o => o.moveType === 'Inbound').length} inbound`,
+    createdOn: '',
+  };
+
   return (
-    <div className="bg-dashboard-background min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-dashboard-background">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex-1 flex flex-col px-4">
-        <div className="flex flex-col h-full space-y-dashboard-gap">
-          {/* Page Header - 72px - Full width */}
-          <PageHeader
-            title="Orders"
-            breadcrumbItems={breadcrumbItems}
-            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          />
+      {/* Fixed Page Header Section */}
+      <div className="flex-shrink-0 px-4">
+        <PageHeader
+          title="Orders"
+          breadcrumbItems={breadcrumbItems}
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        />
+      </div>
 
-          {/* Filter Section - 928px width, responsive */}
-          <div className="">
-            <OrdersFilter
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-            />
-          </div>
+      {/* Fixed Filter Section */}
+      <div className="flex-shrink-0 px-4 mb-4">
+        <OrdersFilter
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        />
+      </div>
 
-          {/* Table Section - 928px width, responsive, remaining viewport */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200">
-            <AdvancedTable.Root
-              data={orders}
-              columns={columns}
-              onRowClick={handleRowClick}
-              // enableBulkSelection={true}
-              onBulkAction={handleBulkAction}
-              isLoading={isFetching && filter.pageIndex === 1}
-              emptyMessage={isFetching ? "Loading orders..." : "No orders found matching your criteria"}
-            >
-              {/* <AdvancedTable.Loading / */}
-              <AdvancedTable.Container
-                hasNextPage={hasNextPage}
-                fetchNextPage={fetchNextPage}
-                isFetchingNextPage={isLoadingMore}
-              >
-                <AdvancedTable.Table>
-                  <AdvancedTable.Header />
-                  <AdvancedTable.Body />
-                  {/* <AdvancedTable.Footer footerData={footerData} /> */}
-                </AdvancedTable.Table>
-              </AdvancedTable.Container>
-              {/* <AdvancedTable.BulkActions /> */}
-            </AdvancedTable.Root>
-          </div>
-        </div>
+      {/* Flexible Table Section - Takes remaining space */}
+      <div className="flex-1 px-4 pb-4 min-h-0">
+        <AdvancedTable.Root
+          data={orders}
+          columns={columns}
+          onRowClick={handleRowClick}
+          enableBulkSelection={true}
+          onBulkAction={handleBulkAction}
+          stickyColumns={{
+            left: ['transactionId'], // Make Transaction ID sticky on the left
+          }}
+          isLoading={isFetching && filter.pageIndex === 1}
+          emptyMessage={isFetching ? "Loading orders..." : "No orders found matching your criteria"}
+        >
+          {/* <AdvancedTable.Loading /> */}
+          <AdvancedTable.Container
+            hasNextPage={hasNextPage}
+            fetchNextPage={fetchNextPage}
+            isFetchingNextPage={isLoadingMore}
+          >
+            <AdvancedTable.Table>
+              <AdvancedTable.Header />
+              <AdvancedTable.Body />
+              {/* <AdvancedTable.Footer footerData={footerData} /> */}
+            </AdvancedTable.Table>
+          </AdvancedTable.Container>
+          {/* <AdvancedTable.BulkActions /> */}
+        </AdvancedTable.Root>
       </div>
     </div>
   )
