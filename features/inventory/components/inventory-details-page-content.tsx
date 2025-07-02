@@ -224,7 +224,7 @@ export function InventoryDetailsPageContent() {
   // Error handling
   if (!inventoryAllocationId) {
     return (
-      <div className="h-screen flex flex-col bg-gray-50">
+      <div className="h-screen flex flex-col bg-dashboard-background">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-red-500">No inventory allocation ID provided</div>
@@ -236,7 +236,7 @@ export function InventoryDetailsPageContent() {
   // Show error state
   if (inventoryError) {
     return (
-      <div className="h-screen flex flex-col bg-gray-50">
+      <div className="h-screen flex flex-col bg-dashboard-background">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-red-500">Error loading inventory details: {JSON.stringify(inventoryError)}</div>
@@ -248,7 +248,7 @@ export function InventoryDetailsPageContent() {
   // Show initial loading screen if nothing has loaded yet
   if (isInitialLoading && !hasInventoryLoaded && !hasTransactionsLoaded) {
     return (
-      <div className="h-screen flex flex-col bg-gray-50">
+      <div className="h-screen flex flex-col bg-dashboard-background">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-gray-500 flex items-center gap-2">
@@ -260,9 +260,9 @@ export function InventoryDetailsPageContent() {
     )
   }
 
-  // Render main content
+  // Render main content - FIXED: Exact same structure as inventory page
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-dashboard-background">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Fixed Page Header Section */}
@@ -274,7 +274,7 @@ export function InventoryDetailsPageContent() {
         />
       </div>
 
-      {/* Content */}
+      {/* Content - FIXED: Exact same structure as inventory page */}
       <div className="flex-1 px-4 pb-4 min-h-0">
         {/* Customer Details Card */}
         {isInitialLoading && !hasInventoryLoaded ? (
@@ -291,8 +291,8 @@ export function InventoryDetailsPageContent() {
           </div>
         ) : null}
 
-        {/* Transaction History Table - FIXED: Proper structure like inventory page */}
-        <div className="flex-1 min-h-0 bg-white rounded-lg shadow-sm border border-gray-200">
+        {/* Transaction History Table - FIXED: Exact same structure as inventory page */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[600px]">
           <AdvancedTable.Root
             data={transactions}
             columns={columns}
@@ -300,12 +300,11 @@ export function InventoryDetailsPageContent() {
             enableBulkSelection={true}
             onBulkAction={handleBulkAction}
             stickyColumns={{
-              left: ["dateTime"], // Make Date & Time sticky on the left
+              
             }}
             isLoading={isTableLoading}
             emptyMessage={getEmptyMessage()}
           >
-            {/* <AdvancedTable.Loading /> */}
             <AdvancedTable.Container
               hasNextPage={hasNextPage}
               fetchNextPage={handleFetchNextPage}
@@ -314,10 +313,8 @@ export function InventoryDetailsPageContent() {
               <AdvancedTable.Table>
                 <AdvancedTable.Header />
                 <AdvancedTable.Body />
-                {/* <AdvancedTable.Footer footerData={footerData} /> */}
               </AdvancedTable.Table>
             </AdvancedTable.Container>
-            {/* <AdvancedTable.BulkActions /> */}
           </AdvancedTable.Root>
         </div>
       </div>
