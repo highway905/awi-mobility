@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { currentTasksData } from "../mocks/dashboard-data"
 import type { Task } from "../types"
 

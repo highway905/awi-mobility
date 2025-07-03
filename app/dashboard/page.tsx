@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Sidebar } from "@/components/layout/sidebar"
-import { PageHeader } from "@/features/shared/components/page-header"
+import { Sidebar } from "@/components/shared/sidebar"
+import { PageHeader } from "@/components/shared/page-header"
 import { OrderStatusSection } from "@/features/dashboard/components/order-status-section"
 import { CurrentTasksTable } from "@/features/dashboard/components/current-tasks-table"
 import { NeedsAttentionTable } from "@/features/dashboard/components/needs-attention-table"

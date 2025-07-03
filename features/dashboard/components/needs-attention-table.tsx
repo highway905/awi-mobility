@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { cn } from "@/lib/utils"
 import { needsAttentionData, statusStyles } from "../mocks/dashboard-data"
 import type { AttentionItem } from "../types"

@@ -16,7 +16,7 @@ export default function HomePage() {
         
         if (userCred?.token) {
           // Redirect to the orders page if the token exists
-          router.push("/orders");
+          router.push("/dashboard");
         } else {
           // Redirect to the login page if the token is missing
           router.push("/login");
