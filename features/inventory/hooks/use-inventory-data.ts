@@ -32,11 +32,39 @@ export function useInventoryData(apiPayload: any, shouldFetch: boolean) {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false)
   const [currentApiPayload, setCurrentApiPayload] = useState(apiPayload)
+  const [lastSortingPayload, setLastSortingPayload] = useState<string>("")
+
+  // Create a sorting key to detect sorting changes
+  const sortingKey = `${apiPayload.sortColumn}-${apiPayload.sortDirection}`
 
   // Update current API payload when it changes
   useEffect(() => {
     setCurrentApiPayload(apiPayload)
   }, [apiPayload])
+
+  // Reset pagination and accumulated data when sorting changes
+  useEffect(() => {
+    if (lastSortingPayload && lastSortingPayload !== sortingKey) {
+      console.log("Sorting changed, resetting pagination:", {
+        old: lastSortingPayload,
+        new: sortingKey
+      })
+      
+      setPaginationState({
+        pageIndex: 1,
+        hasNextPage: false,
+        accumulatedData: [],
+      })
+      setHasInitiallyLoaded(false)
+      
+      // Update the API payload to trigger a fresh query
+      setCurrentApiPayload(prev => ({
+        ...prev,
+        pageIndex: 1
+      }))
+    }
+    setLastSortingPayload(sortingKey)
+  }, [sortingKey, lastSortingPayload])
 
   const {
     data: inventoryData,

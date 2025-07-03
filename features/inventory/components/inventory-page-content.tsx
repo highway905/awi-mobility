@@ -16,6 +16,7 @@ import { InventoryFilterSheet } from "./inventory-filter-sheet"
 import { useCustomerCache } from "@/hooks/useCustomerCache"
 import { useInventoryData, type InventoryItem } from "../hooks/use-inventory-data"
 import { isEmpty } from "lodash"
+import type { SortingState } from "@tanstack/react-table"
 
 const breadcrumbItems = [{ label: "Home", href: "/dashboard" }, { label: "Real Time Inventory" }]
 
@@ -56,6 +57,31 @@ export const defaultInventoryFilter = {
   status: "",
 }
 
+// Convert TanStack sorting to API format
+const convertSortingToApiFormat = (sorting: SortingState) => {
+  if (!sorting || sorting.length === 0) {
+    return { sortColumn: "", sortDirection: "" }
+  }
+  
+  const sort = sorting[0] // Take the first sort (single column sorting)
+  return {
+    sortColumn: sort.id,
+    sortDirection: sort.desc ? "desc" : "asc"
+  }
+}
+
+// Convert API format to TanStack sorting
+const convertApiFormatToSorting = (sortColumn: string, sortDirection: string): SortingState => {
+  if (!sortColumn || !sortDirection) {
+    return []
+  }
+  
+  return [{
+    id: sortColumn,
+    desc: sortDirection === "desc"
+  }]
+}
+
 export function InventoryPageContent() {
   const { push } = useRouter()
 
@@ -70,11 +96,13 @@ export function InventoryPageContent() {
       return {
         customer: parsedFilter.customerId || "",
         search: parsedFilter.searchKey || "",
+        skuSearch: parsedFilter.sku || "",
       }
     }
     return {
       customer: "",
       search: "",
+      skuSearch: "",
     }
   })
 
@@ -82,22 +110,21 @@ export function InventoryPageContent() {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const [filter, setFilter] = useState<any>(
-    !isEmpty(parsedFilter) ? { ...parsedFilter, sortColumn: "", sortDirection: "" } : { ...defaultInventoryFilter },
-  )
+  // Initialize filter state with sorting
+  const [filter, setFilter] = useState<any>(() => {
+    if (!isEmpty(parsedFilter)) {
+      return { ...parsedFilter }
+    }
+    return { ...defaultInventoryFilter }
+  })
 
-  // Use custom hooks
-  // const { filters, updateFilter, setFilters } = useInventoryFilters("inventoryListFilter")
-
-  // Initialize filter state
-  // const [filter, setFilter] = useState<any>(() => {
-  //   const storedFilter = typeof window !== "undefined" ? localStorage.getItem("inventoryListFilter") : null
-  //   const parsedFilter = storedFilter ? JSON.parse(storedFilter) : null
-
-  //   return parsedFilter && Object.keys(parsedFilter).length > 0
-  //     ? { ...parsedFilter, sortColumn: "", sortDirection: "", searchKey: filters.search || "" }
-  //     : { ...defaultInventoryFilter, searchKey: filters.search || "" }
-  // })
+  // Sorting state for the table
+  const [sorting, setSorting] = useState<SortingState>(() => {
+    if (!isEmpty(parsedFilter) && parsedFilter.sortColumn && parsedFilter.sortDirection) {
+      return convertApiFormatToSorting(parsedFilter.sortColumn, parsedFilter.sortDirection)
+    }
+    return []
+  })
 
   // Use cached customer data
   const {
@@ -135,6 +162,18 @@ export function InventoryPageContent() {
     }
   }, [filters.search, filter.searchKey])
 
+  // Update filter when SKU search changes
+  useEffect(() => {
+    if (filters.skuSearch !== filter.sku) {
+      setFilter((prev) => ({
+        ...prev,
+        sku: filters.skuSearch,
+        pageIndex: 1,
+      }))
+      setSearchTrigger((prev) => prev + 1)
+    }
+  }, [filters.skuSearch, filter.sku])
+
   // Update filter when customer changes
   useEffect(() => {
     if (filters.customer !== filter.customerId) {
@@ -146,6 +185,22 @@ export function InventoryPageContent() {
       setSearchTrigger((prev) => prev + 1)
     }
   }, [filters.customer, filter.customerId])
+
+  // Handle sorting changes
+  const handleSortingChange = useCallback((newSorting: SortingState) => {
+    console.log("Sorting changed:", newSorting)
+    setSorting(newSorting)
+    
+    // Convert to API format and update filter
+    const { sortColumn, sortDirection } = convertSortingToApiFormat(newSorting)
+    setFilter((prev) => ({
+      ...prev,
+      sortColumn,
+      sortDirection,
+      pageIndex: 1, // Reset to first page when sorting changes
+    }))
+    setSearchTrigger((prev) => prev + 1)
+  }, [])
 
   // Create the API payload
   const apiPayload = useMemo(() => filterToPayload(filter), [filter])
@@ -163,29 +218,6 @@ export function InventoryPageContent() {
     fetchNextPage,
     resetPagination,
   } = useInventoryData(apiPayload, shouldFetchData)
-
-  // Handle bulk actions
-  // const handleBulkAction = useCallback(async (action: string, selectedRows: InventoryItem[]) => {
-  //   const itemIds = selectedRows.map((item) => item.id)
-
-  //   try {
-  //     switch (action) {
-  //       case "export":
-  //         console.log("Exporting inventory items:", itemIds)
-  //         break
-  //       case "adjust":
-  //         console.log("Adjusting inventory for items:", itemIds)
-  //         break
-  //       case "update-location":
-  //         console.log("Updating location for items:", itemIds)
-  //         break
-  //       default:
-  //         console.log("Bulk action:", action, selectedRows)
-  //     }
-  //   } catch (error) {
-  //     console.error("Bulk action failed:", error)
-  //   }
-  // }, [])
 
   const handleRowClick = useCallback(
     (item: InventoryItem) => {
@@ -214,6 +246,7 @@ export function InventoryPageContent() {
       ...prev,
       customer: value,
       search: value === "" || value === "default" ? "" : prev.search,
+      skuSearch: value === "" || value === "default" ? "" : prev.skuSearch,
     }))
 
     // Update the main filter object
@@ -221,7 +254,16 @@ export function InventoryPageContent() {
       ...prev,
       customerId: value,
       searchKey: value === "" || value === "default" ? "" : prev.searchKey,
+      sku: value === "" || value === "default" ? "" : prev.sku,
       pageIndex: 1,
+    }))
+
+    // Reset sorting when customer changes
+    setSorting([])
+    setFilter((prev) => ({
+      ...prev,
+      sortColumn: "",
+      sortDirection: "",
     }))
   }
 
@@ -387,8 +429,11 @@ export function InventoryPageContent() {
       filterCustomerId: filter.customerId,
       shouldFetchData,
       customerListLoaded: customerList.length > 0,
+      sorting,
+      sortColumn: filter.sortColumn,
+      sortDirection: filter.sortDirection,
     })
-  }, [filters.customer, filter.customerId, shouldFetchData, customerList.length])
+  }, [filters.customer, filter.customerId, shouldFetchData, customerList.length, sorting, filter.sortColumn, filter.sortDirection])
 
   return (
     <div className="h-screen flex flex-col bg-dashboard-background">
@@ -401,14 +446,27 @@ export function InventoryPageContent() {
           breadcrumbItems={breadcrumbItems}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           action={
-            <div>
+            <div className="flex items-center gap-3">
+              {/* General Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search SKU"
+                  placeholder="Search inventory..."
                   value={filters.search}
                   onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                  className="pl-10 w-64"
+                  className="pl-10 w-48"
+                  disabled={!showTable}
+                />
+              </div>
+              
+              {/* SKU Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search SKU..."
+                  value={filters.skuSearch}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, skuSearch: e.target.value }))}
+                  className="pl-10 w-40"
                   disabled={!showTable}
                 />
               </div>
@@ -461,9 +519,6 @@ export function InventoryPageContent() {
             {/* Cache status indicator and refresh button */}
             {isUsingCache && (
               <div className="flex items-center space-x-2">
-                {/* <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-                  Cached ({Math.floor(cacheAge / 1000)}s ago)
-                </span> */}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -520,13 +575,16 @@ export function InventoryPageContent() {
             columns={columns}
             onRowClick={handleRowClick}
             enableBulkSelection={true}
-            // onBulkAction={handleBulkAction}
             stickyColumns={{
               left: ["sku"],
               right: ["actions"],
             }}
             isLoading={isLoading}
             emptyMessage={isLoading ? "Loading inventory..." : "No inventory items found matching your criteria"}
+            // Controlled sorting props
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
+            manualSorting={true}
           >
             <AdvancedTable.Container
               hasNextPage={hasNextPage}
@@ -554,6 +612,8 @@ export function InventoryPageContent() {
         open={filterSheetOpen}
         onOpenChange={setFilterSheetOpen}
         onFiltersChange={handleFiltersChange}
+        columns={columns}
+        showCustomerColumns={showCustomerColumns}
       />
     </div>
   )
