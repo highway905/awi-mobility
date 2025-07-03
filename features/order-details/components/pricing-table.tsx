@@ -1,6 +1,6 @@
 "use client"
 
-import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { pricingData, totalAmount } from "../mocks/pricing-data"
 import type { PricingItem } from "../types"
 

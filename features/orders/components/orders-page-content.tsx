@@ -2,10 +2,10 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Sidebar } from "@/components/layout/sidebar"
-import { PageHeader } from "@/features/shared/components/page-header"
+import { Sidebar } from "@/components/shared/sidebar"
+import { PageHeader } from "@/components/shared/page-header"
 import { OrdersFilter } from "./orders-filter"
-import { AdvancedTable, type AdvancedTableColumn } from "@/features/shared/components/advanced-table"
+import { AdvancedTable, type AdvancedTableColumn } from "@/components/shared/advanced-table"
 import { useGetOrderListQuery } from "@/lib/redux/api/orderManagement"
 import { isEmpty } from 'lodash';
 

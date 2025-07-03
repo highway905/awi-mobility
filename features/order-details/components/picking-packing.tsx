@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { Search, Camera } from "lucide-react"
 import { pickingData } from "../mocks/picking-data"
 import type { PickingItem } from "../types"

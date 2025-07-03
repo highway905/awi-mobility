@@ -1,6 +1,6 @@
 "use client"
 
-import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { shippingData, trackingEvents } from "../mocks/shipping-data"
 import type { TrackingEvent } from "../types"
 

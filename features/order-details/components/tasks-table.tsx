@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { tasksData, statusStyles } from "../mocks/tasks-data"
