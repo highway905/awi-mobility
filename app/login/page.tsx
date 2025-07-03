@@ -38,7 +38,7 @@ export default function Login() {
   useEffect(() => {
     const userCred = getUserCred("userCred")
     if (userCred?.token) {
-      router.push("/orders")
+      router.push("/inventory")
     }
   }, [router])
   
@@ -80,7 +80,7 @@ export default function Login() {
       if (response?.statusCode === 200) {
         // Successful login - redirect with a slight delay to ensure credentials are saved
         setTimeout(() => {
-          router.push("/orders")
+          router.push("/inventory")
         }, 100)
       } else {
         setErrorMessage("Invalid credentials. Please try again.")

@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { InventoryDetailsPageContent } from "@/features/inventory/components/inventory-details-page-content"
+import AuthGuard from "@/routes/AuthGuard"
 
 interface InventoryDetailsPageProps {
   params: {
@@ -11,7 +12,9 @@ export default function InventoryDetailsPage({ params }: InventoryDetailsPagePro
   console.log("InventoryDetailsPage", params)
   return (
     <Suspense fallback={<></>}>
-      <InventoryDetailsPageContent />
+      <AuthGuard>
+        <InventoryDetailsPageContent />
+      </AuthGuard>
     </Suspense>
   )
 }

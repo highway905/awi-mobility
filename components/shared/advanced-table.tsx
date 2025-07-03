@@ -72,10 +72,6 @@ interface AdvancedTableContextValue<T> {
   // Infinite scroll
   hasNextPage: boolean
   isFetchingNextPage: boolean
-  // Controlled sorting
-  sorting: SortingState
-  onSortingChange?: (sorting: SortingState) => void
-  manualSorting: boolean
 }
 
 const AdvancedTableContext = createContext<AdvancedTableContextValue<any> | null>(null)
@@ -219,10 +215,6 @@ interface AdvancedTableRootProps<T> {
   }
   isLoading?: boolean
   emptyMessage?: string
-  // Controlled sorting props
-  sorting?: SortingState
-  onSortingChange?: (sorting: SortingState) => void
-  manualSorting?: boolean
 }
 
 function AdvancedTableRoot<T>({
@@ -238,18 +230,10 @@ function AdvancedTableRoot<T>({
   stickyColumns,
   isLoading = false,
   emptyMessage = "No data available",
-  // Controlled sorting props
-  sorting: controlledSorting,
-  onSortingChange,
-  manualSorting = false,
 }: AdvancedTableRootProps<T>) {
-  const [internalSorting, setInternalSorting] = useState<SortingState>([])
+  const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-
-  // Use controlled sorting if provided, otherwise use internal state
-  const sorting = controlledSorting !== undefined ? controlledSorting : internalSorting
-  const handleSortingChange = onSortingChange || setInternalSorting
 
   // Selection state
   const [isSelectionMode, setIsSelectionMode] = useState(false)
@@ -524,10 +508,9 @@ function AdvancedTableRoot<T>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: handleSortingChange,
+    onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    manualSorting: manualSorting,
     state: {
       sorting,
       columnFilters,
@@ -567,9 +550,6 @@ function AdvancedTableRoot<T>({
     pressStartTime,
     hasNextPage: false,
     isFetchingNextPage: false,
-    sorting,
-    onSortingChange: handleSortingChange,
-    manualSorting,
   }
 
   return (
@@ -656,7 +636,7 @@ function AdvancedTableTable({ children }: { children: React.ReactNode }) {
 
 // Header component
 function AdvancedTableHeader() {
-  const { table, getStickyStyles, columns, sorting, onSortingChange, manualSorting } = useAdvancedTable()
+  const { table, getStickyStyles, columns } = useAdvancedTable()
 
   return (
     <thead className="sticky top-0 bg-white z-30 shadow-sm">
@@ -690,28 +670,7 @@ function AdvancedTableHeader() {
                     </span>
                     {header.column.getCanSort() && (
                       <button
-                        onClick={() => {
-                          if (manualSorting && onSortingChange) {
-                            const currentSort = sorting.find(s => s.id === header.column.id)
-                            let newSorting: typeof sorting = []
-                            
-                            if (!currentSort) {
-                              // No current sort, set to ascending
-                              newSorting = [{ id: header.column.id, desc: false }]
-                            } else if (!currentSort.desc) {
-                              // Currently ascending, set to descending
-                              newSorting = [{ id: header.column.id, desc: true }]
-                            } else {
-                              // Currently descending, remove sort
-                              newSorting = []
-                            }
-                            
-                            onSortingChange(newSorting)
-                          } else {
-                            // Use default TanStack behavior for client-side sorting
-                            header.column.getToggleSortingHandler()?.()
-                          }
-                        }}
+                        onClick={header.column.getToggleSortingHandler()}
                         className="ml-1 hover:bg-gray-100 rounded p-1 flex-shrink-0"
                       >
                         {header.column.getIsSorted() === "asc" ? (
