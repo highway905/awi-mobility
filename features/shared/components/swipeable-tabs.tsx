@@ -53,9 +53,9 @@ export function SwipeableTabs({ tabs, activeTab, onTabChange, renderContent }: S
   }
 
   return (
-    <div className="px-4 flex-1 flex flex-col h-full">
+    <div className="px-4 flex-1 flex flex-col h-full max-h-full">
       {/* Tab Navigation */}
-      <div className="mb-2">
+      <div className="mb-2 flex-shrink-0">
         <Tabs value={activeTab} onValueChange={onTabChange}>
           <TabsList className="h-9 w-full bg-[#F5F5F4] border border-[#D6D3D1]">
             {tabs.map((tab) => (
@@ -77,7 +77,7 @@ export function SwipeableTabs({ tabs, activeTab, onTabChange, renderContent }: S
       </div>
       
       {/* Swipeable Content */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <Swiper
           modules={[Navigation, Pagination]}
           spaceBetween={0}
@@ -93,15 +93,15 @@ export function SwipeableTabs({ tabs, activeTab, onTabChange, renderContent }: S
           longSwipesMs={300}
           followFinger={true}
           grabCursor={true}
-          className="h-full w-full"
+          className="h-full"
           style={{
             height: "100%",
             width: "100%",
           }}
         >
           {tabs.map((tab) => (
-            <SwiperSlide key={tab.id} className="h-full">
-              <div className="bg-white">{renderContent(tab.id)}</div>
+            <SwiperSlide key={tab.id} className="h-full overflow-auto">
+              <div className="bg-white h-full">{renderContent(tab.id)}</div>
             </SwiperSlide>
           ))}
         </Swiper>

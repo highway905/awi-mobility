@@ -3,76 +3,103 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
-import { Search, Camera } from "lucide-react"
-import { pickingData } from "../mocks/picking-data"
-import type { PickingItem } from "../types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SearchWithCamera } from "@/components/ui/search-with-camera"
 
-const columns: DataTableColumn<PickingItem>[] = [
-  {
-    key: "sku",
-    header: "SKU",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "name",
-    header: "Name",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "description",
-    header: "Description",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "primaryUPC",
-    header: "Primary UPC",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "bundleSKU",
-    header: "Bundle SKU",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "itemsBundle",
-    header: "Items / Bundle",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "orderQty",
-    header: "Order Qty",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "packedQty",
-    header: "Packed Qty",
-    headerClassName: "text-gray-500",
-  },
-]
+// Define the interface for line items from the API
+interface LineItem {
+  id: string;
+  customerSkuId: string;
+  sku: string;
+  isNonSku: boolean;
+  isBundle: boolean;
+  itemName: string;
+  universalProductCode: string;
+  description: string;
+  qty: string;
+  orderQuantity: number;
+}
 
-export function PickingPacking() {
+// Interface for the display in the table
+interface PickingItem {
+  id: string;
+  sku: string;
+  name: string;
+  description: string;
+  primaryUPC: string;
+  orderQty: number;
+  actualQty: number;
+}
+
+interface PickingPackingProps {
+  lineItems: LineItem[];
+}
+
+export function PickingPacking({ lineItems = [] }: PickingPackingProps) {
+  // Transform API data for display, ensure lineItems is an array
+  const safeLineItems = Array.isArray(lineItems) ? lineItems : [];
+  const pickingItems: PickingItem[] = safeLineItems.map(item => ({
+    id: item.id,
+    sku: item.sku,
+    name: item.itemName,
+    description: item.description || '-',
+    primaryUPC: item.universalProductCode || '-',
+    orderQty: item.orderQuantity,
+    actualQty: parseInt(item.qty) || 0,
+  }));
+
+  const columns: DataTableColumn<PickingItem>[] = [
+    {
+      key: "sku",
+      header: "SKU",
+      headerClassName: "text-gray-500",
+    },
+    {
+      key: "name",
+      header: "Name",
+      headerClassName: "text-gray-500",
+    },
+    {
+      key: "description",
+      header: "Description",
+      headerClassName: "text-gray-500",
+    },
+    {
+      key: "primaryUPC",
+      header: "Primary UPC",
+      headerClassName: "text-gray-500",
+    },
+    {
+      key: "orderQty",
+      header: "Order Qty",
+      headerClassName: "text-gray-500",
+      className: "text-center",
+    },
+    {
+      key: "actualQty",
+      header: "Actual Qty",
+      render: (value) => <Input type="number" value={value} min="0" className="w-24 mx-auto" />,
+      headerClassName: "text-gray-500",
+      className: "text-center",
+    },
+  ]
+
   return (
-    <div className="h-full flex flex-col p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold">Picking & Packing</h2>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input placeholder="SKU, Name, UPC" className="pl-9 pr-12 w-80" />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
-            >
-              <Camera className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0">
-        <DataTable data={pickingData} columns={columns} />
-      </div>
-    </div>
+    <Card className="h-full flex flex-col p-6">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-0  pb-4">
+        <CardTitle className="text-xl font-semibold">Picking & Packing</CardTitle>
+        <SearchWithCamera 
+          placeholder="Search items..." 
+          width="240px" 
+          onCamera={() => {
+            // Handle camera/barcode scanning
+            alert("Camera functionality would open here");
+          }}
+        />
+      </CardHeader>
+      <CardContent className="overflow-auto p-0">
+        <DataTable columns={columns} data={pickingItems} />
+      </CardContent>
+    </Card>
   )
 }

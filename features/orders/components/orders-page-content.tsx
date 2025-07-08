@@ -444,7 +444,7 @@ export function OrdersPageContent() {
   ]
 
   const handleRowClick = (order: Order) => {
-    push(`/order-details/${order.transactionId}`)
+    push(`/order-details/${order.orderId}`)
   }
 
   // Save filter to localStorage when it changes

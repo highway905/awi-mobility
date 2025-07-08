@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils"
 import { tasksData, statusStyles } from "../mocks/tasks-data"
 import type { Task } from "../types"
 
+interface TasksTableProps {
+  orderDetails?: any; // Type for the order details from API
+}
+
 const columns: DataTableColumn<Task>[] = [
   {
     key: "task",
@@ -58,14 +62,18 @@ const columns: DataTableColumn<Task>[] = [
   },
 ]
 
-export function TasksTable() {
+export function TasksTable({ orderDetails }: TasksTableProps = {}) {
+  // Use orderDetails to fetch or filter tasks if needed
+  // For now, we'll continue using the mock data
+  const tasks = tasksData;
+  
   return (
     <Card>
       <div className="p-6">
         <div className="mb-4">
           <h2 className="text-xl font-semibold">Tasks</h2>
         </div>
-        <DataTable data={tasksData} columns={columns} />
+        <DataTable data={tasks} columns={columns} />
       </div>
     </Card>
   )

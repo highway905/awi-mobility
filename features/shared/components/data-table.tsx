@@ -1,5 +1,5 @@
 import type React from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 
 export interface DataTableColumn<T> {
@@ -14,9 +14,10 @@ interface DataTableProps<T> {
   data: T[]
   columns: DataTableColumn<T>[]
   className?: string
+  footer?: React.ReactNode
 }
 
-export function DataTable<T>({ data, columns, className }: DataTableProps<T>) {
+export function DataTable<T>({ data, columns, className, footer }: DataTableProps<T>) {
   const getValue = (row: T, key: keyof T | string): any => {
     if (typeof key === "string" && key.includes(".")) {
       // Handle nested properties like 'user.name'
@@ -54,6 +55,11 @@ export function DataTable<T>({ data, columns, className }: DataTableProps<T>) {
             </TableRow>
           ))}
         </TableBody>
+        {footer && (
+          <TableFooter className="border-t h-10 border-dashboard-border bg-gray-50/50">
+            {footer}
+          </TableFooter>
+        )}
       </Table>
     </div>
   )

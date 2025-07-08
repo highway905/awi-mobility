@@ -1,79 +1,143 @@
 "use client"
 
 import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
-import { shippingData, trackingEvents } from "../mocks/shipping-data"
-import type { TrackingEvent } from "../types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-const columns: DataTableColumn<TrackingEvent>[] = [
+interface TrackingDetails {
+  shippingAndTracking: {
+    carrier: string
+    carrierService: string
+    trackingNumber: string
+    trackingUrl: string
+  }
+}
+
+interface DeliveryDetails {
+  id: string
+  billOfLadingNumber: string
+  trackingNumber: string
+  trailerOrContainerNumber: string
+  loadNumber: string
+  sealNumber: string
+  doorNumber: string
+}
+
+// Interface for the tracking events display
+interface TrackingEvent {
+  id: string
+  date: string
+  time: string
+  location: string
+  status: string
+  description: string
+}
+
+interface ShippingTrackingProps {
+  trackingDetails: TrackingDetails
+  deliveryDetails: DeliveryDetails
+}
+
+// Sample tracking events (in a real app, this would come from an API)
+const sampleTrackingEvents: TrackingEvent[] = [
   {
-    key: "date",
-    header: "Date",
-    headerClassName: "text-gray-500",
+    id: "1",
+    date: "Jul 5, 2025",
+    time: "3:42 PM",
+    location: "Los Angeles, CA",
+    status: "Delivered",
+    description: "Package delivered to recipient",
   },
   {
-    key: "time",
-    header: "Time",
-    headerClassName: "text-gray-500",
+    id: "2",
+    date: "Jul 4, 2025",
+    time: "8:15 AM",
+    location: "Los Angeles, CA",
+    status: "Out for Delivery",
+    description: "Package is out for delivery",
   },
   {
-    key: "location",
-    header: "Location",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "status",
-    header: "Status",
-    headerClassName: "text-gray-500",
-  },
-  {
-    key: "description",
-    header: "Description",
-    headerClassName: "text-gray-500",
+    id: "3",
+    date: "Jul 3, 2025",
+    time: "9:32 PM",
+    location: "Los Angeles, CA",
+    status: "Arrived at Destination",
+    description: "Package has arrived at final destination",
   },
 ]
 
-export function ShippingTracking() {
+export function ShippingTracking({ trackingDetails, deliveryDetails }: ShippingTrackingProps) {
+  const columns: DataTableColumn<TrackingEvent>[] = [
+    {
+      key: "date",
+      header: "Date",
+      headerClassName: "text-gray-500",
+    },
+    {
+      key: "time",
+      header: "Time",
+      headerClassName: "text-gray-500",
+    },
+    {
+      key: "location",
+      header: "Location",
+      headerClassName: "text-gray-500",
+    },
+    {
+      key: "status",
+      header: "Status",
+      headerClassName: "text-gray-500",
+    },
+    {
+      key: "description",
+      header: "Description",
+      headerClassName: "text-gray-500",
+      className: "w-80",
+    },
+  ]
+
   return (
-    <div className="h-full flex flex-col p-6">
-      <h2 className="text-xl font-semibold mb-6">Shipping & Tracking</h2>
-
-      {/* Shipping Info */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div>
-          <label className="text-sm text-gray-500">Carrier</label>
-          <div className="font-medium">{shippingData.carrier}</div>
-        </div>
-        <div>
-          <label className="text-sm text-gray-500">Tracking Number</label>
-          <div className="font-medium">{shippingData.trackingNumber}</div>
-        </div>
-        <div>
-          <label className="text-sm text-gray-500">Transit Time</label>
-          <div className="font-medium">{shippingData.transitTime}</div>
-        </div>
-      </div>
-
-      {/* Tracking Table */}
-      <div className="flex-1 min-h-0">
-        {trackingEvents.length > 0 ? (
-          <DataTable data={trackingEvents} columns={columns} />
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-500 border border-dashboard-border rounded-dashboard">
-            <div className="mb-4">
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="text-gray-300">
-                <rect x="8" y="16" width="48" height="32" rx="4" stroke="currentColor" strokeWidth="2" fill="none" />
-                <rect x="16" y="24" width="8" height="2" fill="currentColor" />
-                <rect x="16" y="28" width="12" height="2" fill="currentColor" />
-                <rect x="16" y="32" width="6" height="2" fill="currentColor" />
-                <rect x="32" y="24" width="8" height="2" fill="currentColor" />
-                <rect x="32" y="28" width="12" height="2" fill="currentColor" />
-                <rect x="32" y="32" width="6" height="2" fill="currentColor" />
-              </svg>
-            </div>
-            <div className="text-lg font-medium">No Data</div>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-semibold">Shipping & Tracking</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-4 gap-x-8">
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Carrier</label>
+            <div className="font-medium">{trackingDetails.shippingAndTracking.carrier}</div>
           </div>
-        )}
-      </div>
-    </div>
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Carrier Service</label>
+            <div className="font-medium">{trackingDetails.shippingAndTracking.carrierService}</div>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Tracking Number</label>
+            <div className="font-medium">{deliveryDetails.trackingNumber}</div>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">Bill of Lading</label>
+            <div className="font-medium">{deliveryDetails.billOfLadingNumber || "-"}</div>
+          </div>
+          {deliveryDetails.trailerOrContainerNumber && (
+            <div>
+              <label className="text-sm text-gray-500 block mb-1">Trailer/Container Number</label>
+              <div className="font-medium">{deliveryDetails.trailerOrContainerNumber}</div>
+            </div>
+          )}
+          {deliveryDetails.loadNumber && (
+            <div>
+              <label className="text-sm text-gray-500 block mb-1">Load Number</label>
+              <div className="font-medium">{deliveryDetails.loadNumber}</div>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Tracking Events</h3>
+          {/* In a real app, you would fetch tracking events from the carrier's API using the tracking number */}
+          <DataTable columns={columns} data={sampleTrackingEvents} />
+        </div>
+      </CardContent>
+    </Card>
   )
 }
