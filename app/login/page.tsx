@@ -259,7 +259,7 @@ export default function Login() {
               <div className="mt-6 text-center">
                 <span className="text-gray-500">Forgot your password? </span>
                 <Button
-                  variant="link"
+                  variant="ghost"
                   type="button"
                   className="text-orange-500 hover:text-orange-600 font-medium p-0 h-auto"
                   onClick={() => setIsResetPassword(true)}

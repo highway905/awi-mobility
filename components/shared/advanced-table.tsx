@@ -89,11 +89,11 @@ function useAdvancedTable<T>() {
 // Skeleton Row Component
 function SkeletonRow({ columnsCount, enableSelection }: { columnsCount: number; enableSelection: boolean }) {
   return (
-    <tr className="h-12 border-b border-gray-200">
+    <tr className="h-14 border-b border-gray-100 bg-white/50 animate-pulse">
       {enableSelection && (
         <td className="px-4 py-3">
           <div className="flex items-center justify-center">
-            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-4 bg-gray-300 rounded animate-pulse"></div>
           </div>
         </td>
       )}
@@ -101,9 +101,11 @@ function SkeletonRow({ columnsCount, enableSelection }: { columnsCount: number; 
         <td key={index} className="px-4 py-3">
           <div className="flex items-center">
             <div 
-              className="h-4 bg-gray-200 rounded animate-pulse"
+              className="h-4 bg-gray-300 rounded-md animate-pulse"
               style={{ 
-                width: `${Math.random() * 40 + 60}%` // Random width between 60-100%
+                width: `${Math.random() * 40 + 40}%`, // Random width between 40-80%
+                animationDelay: `${index * 0.1}s`,
+                animationDuration: '1.8s'
               }}
             ></div>
           </div>
@@ -113,31 +115,26 @@ function SkeletonRow({ columnsCount, enableSelection }: { columnsCount: number; 
   )
 }
 
-// Skeleton Loading Component with proper height filling
-function TableSkeleton({ rowCount = 8 }: { rowCount?: number }) {
+// Skeleton Loading Component with proper height fitting
+function TableSkeleton({ rowCount = 10 }: { rowCount?: number }) {
   const { columns, enableBulkSelection, isSelectionMode } = useAdvancedTable()
   
   const actualColumns = columns.filter((col: any) => col.id !== "select")
   const showSelection = enableBulkSelection && isSelectionMode
 
+  // Calculate a reasonable number of rows based on typical viewport
+  // Each row is 64px (h-16), so ~8-10 rows should fit in most viewports
+  const visibleRowCount = Math.min(rowCount, 10)
+
   return (
     <tbody className="h-full">
-      {Array.from({ length: rowCount }).map((_, index) => (
+      {Array.from({ length: visibleRowCount }).map((_, index) => (
         <SkeletonRow 
-          key={index} 
+          key={`skeleton-${index}`} 
           columnsCount={actualColumns.length} 
           enableSelection={showSelection}
         />
       ))}
-      {/* Spacer row to fill remaining height and push footer to bottom */}
-      <tr className="h-full">
-        <td 
-          colSpan={actualColumns.length + (showSelection ? 1 : 0)} 
-          className="h-full"
-        >
-          <div className="h-full min-h-[200px]"></div>
-        </td>
-      </tr>
     </tbody>
   )
 }
@@ -245,13 +242,17 @@ function AdvancedTableRoot<T>({
   
   // Use external sorting state if provided, otherwise use internal state
   const sorting = externalSorting !== undefined ? externalSorting : internalSorting
-  const setSorting = useCallback((newSorting: SortingState) => {
+  const setSorting = useCallback((updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
+    const newSorting = typeof updaterOrValue === 'function' 
+      ? updaterOrValue(sorting) 
+      : updaterOrValue;
+    
     if (externalSortingChange) {
       externalSortingChange(newSorting);
     } else {
       setInternalSorting(newSorting);
     }
-  }, [externalSortingChange]);
+  }, [externalSortingChange, sorting]);
 
   // Selection state
   const [isSelectionMode, setIsSelectionMode] = useState(false)
@@ -368,12 +369,8 @@ function AdvancedTableRoot<T>({
 
   const handleRowClick = useCallback(
     (row: T, rowIndex: number, event: React.MouseEvent) => {
-      // If we're in the middle of a long press, prevent click
-      if (isLongPressing) {
-        event.preventDefault()
-        event.stopPropagation()
-        return
-      }
+      // Prevent event bubbling to avoid any interference
+      event.stopPropagation()
 
       // If we're in selection mode, toggle selection instead of redirecting
       if (isSelectionMode) {
@@ -382,15 +379,24 @@ function AdvancedTableRoot<T>({
         return
       }
 
-      // If we just finished a long press (within 200ms), don't trigger click
-      if (enableBulkSelection && pressStartTime > 0 && Date.now() - pressStartTime < 200) {
+      // If we're in the middle of a long press, prevent click
+      if (isLongPressing) {
+        event.preventDefault()
+        return
+      }
+
+      // If we just finished a long press (within 300ms), don't trigger click
+      if (enableBulkSelection && pressStartTime > 0 && Date.now() - pressStartTime < 300) {
         event.preventDefault()
         return
       }
 
       // Normal row click - redirect to new page
-      if (onRowClick) {
-        onRowClick(row)
+      if (onRowClick && redirectEnabled) {
+        // Small delay to ensure no interference from touch events
+        setTimeout(() => {
+          onRowClick(row)
+        }, 10)
       }
     },
     [
@@ -400,6 +406,7 @@ function AdvancedTableRoot<T>({
       pressStartTime,
       onRowClick,
       enableBulkSelection,
+      redirectEnabled,
     ],
   )
 
@@ -635,13 +642,14 @@ function AdvancedTableContainer({
   return (
     <div
       ref={tableContainerRef}
-      className={cn("flex-1 overflow-y-auto overflow-x-auto relative", className)}
+      className={cn("flex-1 overflow-auto relative", className)}
       style={{
         WebkitUserSelect: enableBulkSelection && pressStartTime > 0 ? "none" : "auto",
         userSelect: enableBulkSelection && pressStartTime > 0 ? "none" : "auto",
+        scrollbarGutter: "stable",
       }}
     >
-      <div className="min-w-fit w-full">
+      <div className="min-w-max w-full">
         {children}
       </div>
     </div>
@@ -651,7 +659,7 @@ function AdvancedTableContainer({
 // Table component with fixed layout and width preservation
 function AdvancedTableTable({ children }: { children: React.ReactNode }) {
   return (
-    <table className="w-full border-collapse table-fixed h-full min-w-max whitespace-nowrap">
+    <table className="w-full border-collapse min-w-max">
       {children}
     </table>
   )
@@ -740,7 +748,7 @@ function AdvancedTableBody() {
 
   // Show skeleton loading when initially loading
   if (isLoading && data.length === 0) {
-    return <TableSkeleton rowCount={8} />
+    return <TableSkeleton rowCount={10} />
   }
 
   // Show empty state when no data
@@ -826,7 +834,7 @@ function AdvancedTableBody() {
             <div className="flex items-center justify-center">
               <div className="text-sm text-gray-500 flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
-                Loading more...
+                Loading more data...
               </div>
             </div>
           </td>

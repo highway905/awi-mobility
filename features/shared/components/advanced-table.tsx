@@ -91,11 +91,11 @@ function useAdvancedTable<T>() {
 // Skeleton Row Component
 function SkeletonRow({ columnsCount, enableSelection }: { columnsCount: number; enableSelection: boolean }) {
   return (
-    <tr className="h-12 border-b border-gray-200">
+    <tr className="h-14 border-b border-gray-100 bg-white/50 animate-pulse">
       {enableSelection && (
         <td className="px-4 py-3">
           <div className="flex items-center justify-center">
-            <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-4 bg-gray-300 rounded animate-pulse"></div>
           </div>
         </td>
       )}
@@ -103,9 +103,11 @@ function SkeletonRow({ columnsCount, enableSelection }: { columnsCount: number; 
         <td key={index} className="px-4 py-3">
           <div className="flex items-center">
             <div 
-              className="h-4 bg-gray-200 rounded animate-pulse"
+              className="h-4 bg-gray-300 rounded-md animate-pulse"
               style={{ 
-                width: `${Math.random() * 40 + 60}%` // Random width between 60-100%
+                width: `${Math.random() * 40 + 40}%`, // Random width between 40-80%
+                animationDelay: `${index * 0.1}s`,
+                animationDuration: '1.8s'
               }}
             ></div>
           </div>
@@ -115,31 +117,26 @@ function SkeletonRow({ columnsCount, enableSelection }: { columnsCount: number; 
   )
 }
 
-// Skeleton Loading Component with proper height filling
-function TableSkeleton({ rowCount = 8 }: { rowCount?: number }) {
+// Skeleton Loading Component with proper height fitting
+function TableSkeleton({ rowCount = 10 }: { rowCount?: number }) {
   const { columns, enableBulkSelection, isSelectionMode } = useAdvancedTable()
   
   const actualColumns = columns.filter((col: any) => col.id !== "select")
   const showSelection = enableBulkSelection && isSelectionMode
 
+  // Calculate a reasonable number of rows based on typical viewport
+  // Each row is 64px (h-16), so ~8-10 rows should fit in most viewports
+  const visibleRowCount = Math.min(rowCount, 10)
+
   return (
     <tbody className="h-full">
-      {Array.from({ length: rowCount }).map((_, index) => (
+      {Array.from({ length: visibleRowCount }).map((_, index) => (
         <SkeletonRow 
-          key={index} 
+          key={`skeleton-${index}`} 
           columnsCount={actualColumns.length} 
           enableSelection={showSelection}
         />
       ))}
-      {/* Spacer row to fill remaining height and push footer to bottom */}
-      <tr className="h-full">
-        <td 
-          colSpan={actualColumns.length + (showSelection ? 1 : 0)} 
-          className="h-full"
-        >
-          <div className="h-full min-h-[200px]"></div>
-        </td>
-      </tr>
     </tbody>
   )
 }
@@ -758,7 +755,7 @@ function AdvancedTableBody() {
 
   // Show skeleton loading when initially loading
   if (isLoading && data.length === 0) {
-    return <TableSkeleton rowCount={8} />
+    return <TableSkeleton rowCount={10} />
   }
 
   // Show empty state when no data
