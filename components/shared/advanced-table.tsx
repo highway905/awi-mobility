@@ -260,16 +260,16 @@ function AdvancedTableRoot<T>({
   const [isLongPressing, setIsLongPressing] = useState(false)
   const [pressStartTime, setPressStartTime] = useState<number>(0)
 
-  const safeData = Array.isArray(data) ? data : []
-  const safeColumns = Array.isArray(columns) ? columns : []
+  const safeData = useMemo(() => Array.isArray(data) ? data : [], [data])
+  const safeColumns = useMemo(() => Array.isArray(columns) ? columns : [], [columns])
 
   // Convert AdvancedTableColumn to TanStack column format
-  const getValue = (row: T, key: keyof T | string): any => {
+  const getValue = useCallback((row: T, key: keyof T | string): any => {
     if (typeof key === "string" && key.includes(".")) {
       return key.split(".").reduce((obj: any, k) => obj?.[k], row)
     }
     return row[key as keyof T]
-  }
+  }, [])
 
   // Selection handlers
   const toggleRowSelection = useCallback((rowIndex: number) => {
@@ -290,7 +290,7 @@ function AdvancedTableRoot<T>({
     } else {
       setSelectedRows(new Set(safeData.map((_, index) => index)))
     }
-  }, [selectedRows.size, safeData.length])
+  }, [selectedRows.size, safeData])
 
   const exitSelectionMode = useCallback(() => {
     setIsSelectionMode(false)
@@ -471,7 +471,7 @@ function AdvancedTableRoot<T>({
     }))
 
     return enableBulkSelection && isSelectionMode ? [checkboxColumn, ...baseColumns] : baseColumns
-  }, [safeColumns, enableBulkSelection, isSelectionMode, checkboxColumn])
+  }, [safeColumns, enableBulkSelection, isSelectionMode, checkboxColumn, getValue])
 
   // Sticky styles calculator with box shadows
   const getStickyStyles = useCallback(

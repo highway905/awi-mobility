@@ -101,13 +101,13 @@ export function TaskStatusChart({ className }: TaskStatusChartProps) {
                 tick={{ 
                   fontSize: 12,
                   width: 100,
-                  wordWrap: 'break-word',
                   textAnchor: 'end'
                 }}
               />
               <Tooltip 
                 formatter={(value, name) => {
-                  const formattedName = name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1');
+                  const nameStr = String(name);
+                  const formattedName = nameStr.charAt(0).toUpperCase() + nameStr.slice(1).replace(/([A-Z])/g, ' $1');
                   return [`${value} tasks`, formattedName];
                 }}
                 labelFormatter={(label) => `${label}`}

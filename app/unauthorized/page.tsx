@@ -27,7 +27,7 @@ export default function Unauthorized() {
           Access Denied
         </h1>
         <p className="text-gray-500 mb-6">
-          You don't have permission to access this page. Please log in with an account that has the required permissions.
+          You don&apos;t have permission to access this page. Please log in with an account that has the required permissions.
         </p>
         <div className="flex gap-4">
           <Button

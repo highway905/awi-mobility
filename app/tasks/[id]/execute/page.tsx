@@ -3,14 +3,16 @@ import { TaskExecutionPageContent } from "@/features/tasks/components/task-execu
 import { TaskExecutionPageSkeleton } from "@/features/tasks/components/task-execution-page-skeleton"
 
 interface TaskExecutionPageProps {
-  params: { id: string }
-  searchParams: { type?: string }
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ type?: string }>
 }
 
-export default function TaskExecutionPage({ params, searchParams }: TaskExecutionPageProps) {
+export default async function TaskExecutionPage({ params, searchParams }: TaskExecutionPageProps) {
+  const { id } = await params
+  const { type } = await searchParams
   return (
     <Suspense fallback={<></>}>
-      <TaskExecutionPageContent taskId={params.id} taskType={searchParams.type} />
+      <TaskExecutionPageContent taskId={id} taskType={type} />
     </Suspense>
   )
 }

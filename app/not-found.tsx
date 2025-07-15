@@ -15,7 +15,7 @@ export default function NotFound() {
           Page not found
         </h1>
         <p className="text-gray-500 mb-6">
-          Sorry, we couldn't find the page you're looking for. The page may have been moved, deleted, or never existed.
+          Sorry, we couldn&apos;t find the page you&apos;re looking for. The page may have been moved, deleted, or never existed.
         </p>
         <Button
           asChild

@@ -47,3 +47,10 @@ export interface UnloadingItem {
   receivedQty: number
   status: "pending" | "completed" | "discrepancy"
 }
+
+export interface LogEntry {
+  id: string
+  action: string
+  author: string
+  timestamp: string
+}

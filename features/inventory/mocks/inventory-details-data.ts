@@ -28,6 +28,7 @@ export const mockInventoryDetails: Record<string, InventoryDetails> = {
 export const mockTransactionHistory: Record<string, TransactionHistory[]> = {
   "sku-yza2233": [
     {
+      id: "tx-001",
       dateTime: "4/11/2025 12:44 PM",
       type: "Outbound Out",
       transactionId: "I-0007263",
@@ -38,6 +39,7 @@ export const mockTransactionHistory: Record<string, TransactionHistory[]> = {
       adjustment: 0,
     },
     {
+      id: "tx-002",
       dateTime: "4/11/2025 12:13 PM",
       type: "Unreserved",
       transactionId: "TO-0695248",
@@ -48,6 +50,7 @@ export const mockTransactionHistory: Record<string, TransactionHistory[]> = {
       adjustment: 0,
     },
     {
+      id: "tx-003",
       dateTime: "4/10/2025 9:30 AM",
       type: "Reserved",
       transactionId: "TO-0695247",
@@ -58,6 +61,7 @@ export const mockTransactionHistory: Record<string, TransactionHistory[]> = {
       adjustment: 0,
     },
     {
+      id: "tx-004",
       dateTime: "4/10/2025 10:15 AM",
       type: "Reserved",
       transactionId: "O-0695243",
@@ -68,6 +72,7 @@ export const mockTransactionHistory: Record<string, TransactionHistory[]> = {
       adjustment: 0,
     },
     {
+      id: "tx-005",
       dateTime: "4/9/2025 2:45 PM",
       type: "Unreserved",
       transactionId: "O-0695243",
@@ -78,6 +83,7 @@ export const mockTransactionHistory: Record<string, TransactionHistory[]> = {
       adjustment: 0,
     },
     {
+      id: "tx-006",
       dateTime: "4/9/2025 1:00 PM",
       type: "Reserved",
       transactionId: "O-0695243",
@@ -88,6 +94,7 @@ export const mockTransactionHistory: Record<string, TransactionHistory[]> = {
       adjustment: 0,
     },
     {
+      id: "tx-007",
       dateTime: "4/8/2025 3:30 PM",
       type: "Unreserved",
       transactionId: "O-0695243",
@@ -100,6 +107,7 @@ export const mockTransactionHistory: Record<string, TransactionHistory[]> = {
   ],
   "sku-bcd4455": [
     {
+      id: "tx-008",
       dateTime: "4/12/2025 10:30 AM",
       type: "Inbound In",
       transactionId: "I-0007264",

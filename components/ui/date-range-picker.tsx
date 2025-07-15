@@ -62,7 +62,6 @@ export default function DateRangePicker({
           alignOffset={0}
         >
           <Calendar
-            initialFocus
             mode="range"
             defaultMonth={date?.from}
             selected={date}

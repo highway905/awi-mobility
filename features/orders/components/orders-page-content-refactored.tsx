@@ -166,6 +166,7 @@ export function OrdersPageContent() {
             // Column saving logic would be handled here
             // For now, just close the sheet
             handleCloseSheet()
+            return { success: true }
           }}
           onResetColumns={() => {
             // Column reset logic would be handled here

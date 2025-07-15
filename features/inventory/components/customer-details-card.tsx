@@ -1,7 +1,17 @@
 import type { InventoryDetails } from "../types"
 
 interface CustomerDetailsCardProps {
-  details: InventoryDetails
+  details: {
+    customer?: any
+    warehouse?: any
+    sku?: string
+    skuNumber?: string
+    lotNumber?: string | null
+    expirationDate?: string | null
+    palletId?: string
+    pallet?: any
+    location?: any
+  }
 }
 
 export function CustomerDetailsCard({ details }: CustomerDetailsCardProps) {
@@ -21,7 +31,7 @@ export function CustomerDetailsCard({ details }: CustomerDetailsCardProps) {
 
         <div>
           <div className="text-sm text-gray-500 mb-1">SKU</div>
-          <div className="font-medium text-gray-900">{details.skuNumber}</div>
+          <div className="font-medium text-gray-900">{details.skuNumber || details.sku}</div>
         </div>
 
         <div>
@@ -37,7 +47,7 @@ export function CustomerDetailsCard({ details }: CustomerDetailsCardProps) {
 
         <div>
           <div className="text-sm text-gray-500 mb-1">Pallet ID</div>
-          <div className="font-medium text-gray-900">{details.palletId}</div>
+          <div className="font-medium text-gray-900">{details.palletId || details.pallet}</div>
         </div>
 
         <div>

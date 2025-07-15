@@ -221,7 +221,7 @@ const comments = [
   },
 ]
 
-const orderLogs = [
+const localOrderLogs = [
   {
     id: "1",
     action: "Shipment Created",
@@ -254,7 +254,7 @@ const orderLogs = [
   },
 ]
 
-const taskLogs = [
+const localTaskLogs = [
   {
     id: "1",
     action: "Picking - Started",
@@ -402,7 +402,7 @@ function LogTimeline({ logs, title }: LogTimelineProps) {
             </div>
             <div className="flex-1 pb-4">
               <div className="font-medium text-gray-900">{log.action}</div>
-              <div className="text-sm text-gray-500 mt-1">By {log.user}</div>
+              <div className="text-sm text-gray-500 mt-1">By {log.author}</div>
               <div className="text-sm text-gray-500">{log.timestamp}</div>
             </div>
           </div>
@@ -1119,10 +1119,10 @@ export function TaskExecutionPageContent({ taskId, taskType = "unloading" }: Tas
       <CardContent className="flex-1 overflow-y-auto p-6">
         <div className="grid grid-cols-2 gap-8 h-full">
           <div className="border-r border-gray-200 pr-8">
-            <LogTimeline logs={orderLogs} title="Order Logs" />
+            <LogTimeline logs={localOrderLogs} title="Order Logs" />
           </div>
           <div className="pl-8">
-            <LogTimeline logs={taskLogs} title="Task Logs" />
+            <LogTimeline logs={localTaskLogs} title="Task Logs" />
           </div>
         </div>
       </CardContent>
@@ -1152,7 +1152,7 @@ export function TaskExecutionPageContent({ taskId, taskType = "unloading" }: Tas
     }
   }
  
-  const handleGoBack = (task: Task) => {
+  const handleGoBack = () => {
     router.push(`/tasks`)
   }
   if (loading || !task) {

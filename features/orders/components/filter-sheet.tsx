@@ -258,7 +258,6 @@ export function FilterSheet({
                       change("toDate", undefined)
                     }
                   }}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>

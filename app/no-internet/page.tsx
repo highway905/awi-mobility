@@ -61,7 +61,7 @@ export default function NoInternet() {
           No Internet Connection
         </h1>
         <p className="text-gray-500 mb-6">
-          Please check your internet connection and try again. We'll automatically reconnect when your connection is restored.
+          Please check your internet connection and try again. We&apos;ll automatically reconnect when your connection is restored.
         </p>
         <Button
           onClick={() => window.location.reload()}

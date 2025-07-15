@@ -2,13 +2,13 @@ import { Suspense } from "react"
 import { InventoryDetailsPageContent } from "@/features/inventory/components/inventory-details-page-content"
 
 interface InventoryDetailsPageProps {
-  params: {
+  params: Promise<{
     sku: string
-  }
+  }>
 }
 
-export default function InventoryDetailsPage({ params }: InventoryDetailsPageProps) {
-  console.log("InventoryDetailsPage", params)
+export default async function InventoryDetailsPage({ params }: InventoryDetailsPageProps) {
+  const { sku } = await params
   return (
     <Suspense fallback={<></>}>
       <InventoryDetailsPageContent />

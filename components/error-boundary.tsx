@@ -45,7 +45,7 @@ class ErrorBoundary extends Component<Props, State> {
               Something went wrong
             </h1>
             <p className="text-gray-500 mb-6">
-              We've encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.
+              We&apos;ve encountered an unexpected error. Please try refreshing the page or contact support if the problem persists.
             </p>
             <div className="flex gap-4">
               <Button

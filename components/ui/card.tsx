@@ -1,17 +1,24 @@
-import type React from "react"
+import React from "react"
 import { cn } from "@/lib/utils"
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
 }
 
-export function Card({ className, children, ...props }: CardProps) {
-  return (
-    <div className={cn("border border-dashboard-border bg-white rounded-dashboard", className)} {...props}>
-      {children}
-    </div>
-  )
-}
+export const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, children, ...props }, ref) => {
+    return (
+      <div 
+        ref={ref}
+        className={cn("border border-dashboard-border bg-white rounded-dashboard", className)} 
+        {...props}
+      >
+        {children}
+      </div>
+    )
+  }
+)
+Card.displayName = "Card"
 
 export function CardHeader({ className, children, ...props }: CardProps) {
   return (

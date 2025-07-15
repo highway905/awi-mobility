@@ -687,7 +687,7 @@ function AdvancedTableHeader() {
                     </span>
                     {header.column.getCanSort() && (
                       <button
-                        onClick={() => {
+                        onClick={(event) => {
                           if (manualSorting && onSortingChange) {
                             const currentSort = sorting.find(s => s.id === header.column.id)
                             let newSorting: typeof sorting = []
@@ -706,7 +706,7 @@ function AdvancedTableHeader() {
                             onSortingChange(newSorting)
                           } else {
                             // Use default TanStack behavior for client-side sorting
-                            header.column.getToggleSortingHandler()?.()
+                            header.column.getToggleSortingHandler()?.(event)
                           }
                         }}
                         className="ml-1 hover:bg-gray-100 rounded p-1 flex-shrink-0"
@@ -993,4 +993,4 @@ export const AdvancedTable = {
 }
 
 // Export types
-export type { AdvancedTableColumn, BulkAction }
+export type { BulkAction }

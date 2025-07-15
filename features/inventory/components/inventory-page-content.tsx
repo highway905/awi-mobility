@@ -445,7 +445,7 @@ export function InventoryPageContent() {
           title="Real Time Inventory"
           breadcrumbItems={breadcrumbItems}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          action={
+          actions={
             <div className="flex items-center gap-3">
               {/* General Search */}
               <div className="relative">

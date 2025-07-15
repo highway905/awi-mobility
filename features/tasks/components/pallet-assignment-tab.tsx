@@ -88,7 +88,7 @@ function DraggableSKURow({ item, onSelect }: { item: SKUItem; onSelect: (id: str
 
   return (
     <TableRow 
-      ref={setNodeRef} 
+      ref={setNodeRef}
       style={style} 
       {...attributes} 
       {...listeners} 

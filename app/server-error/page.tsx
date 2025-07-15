@@ -1,3 +1,5 @@
+"use client"
+
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -15,7 +17,7 @@ export default function ServerError() {
           Server Error
         </h1>
         <p className="text-gray-500 mb-6">
-          We're sorry, but something went wrong on our server. Our team has been notified and is working to fix the issue.
+          We&apos;re sorry, but something went wrong on our server. Our team has been notified and is working to fix the issue.
         </p>
         <div className="flex gap-4">
           <Button

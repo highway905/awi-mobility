@@ -1,4 +1,4 @@
-import type React from "react"
+import React from "react"
 import { cn } from "@/lib/utils"
 
 interface TableProps extends React.HTMLAttributes<HTMLTableElement> {}
@@ -19,14 +19,18 @@ export function TableBody({ className, ...props }: React.HTMLAttributes<HTMLTabl
   return <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />
 }
 
-export function TableRow({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return (
-    <tr
-      className={cn("border-b border-dashboard-border transition-colors hover:bg-gray-50/50", className)}
-      {...props}
-    />
-  )
-}
+export const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
+  ({ className, ...props }, ref) => {
+    return (
+      <tr
+        ref={ref}
+        className={cn("border-b border-dashboard-border transition-colors hover:bg-gray-50/50", className)}
+        {...props}
+      />
+    )
+  }
+)
+TableRow.displayName = "TableRow"
 
 export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (

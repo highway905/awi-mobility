@@ -5,14 +5,19 @@ import { GripVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import type { DataTableColumn } from "@/features/shared/components/data-table"
+import type { AdvancedTableColumn } from "@/features/shared/components/advanced-table"
 import type { Task } from "../types"
+
+// Extended column type with visibility
+interface ColumnWithVisibility<T> extends AdvancedTableColumn<T> {
+  visible?: boolean
+}
 
 interface TasksColumnCustomizationSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  columns: DataTableColumn<Task>[]
-  onColumnsChange: (columns: DataTableColumn<Task>[]) => void
+  columns: AdvancedTableColumn<Task>[]
+  onColumnsChange: (columns: AdvancedTableColumn<Task>[]) => void
 }
 
 export function TasksColumnCustomizationSheet({
@@ -21,14 +26,18 @@ export function TasksColumnCustomizationSheet({
   columns,
   onColumnsChange,
 }: TasksColumnCustomizationSheetProps) {
-  const [localColumns, setLocalColumns] = useState(columns)
+  const [localColumns, setLocalColumns] = useState<ColumnWithVisibility<Task>[]>(() =>
+    columns.map(col => ({ ...col, visible: true }))
+  )
 
   const handleReset = () => {
-    setLocalColumns(columns)
+    setLocalColumns(columns.map(col => ({ ...col, visible: true })))
   }
 
   const handleSave = () => {
-    onColumnsChange(localColumns)
+    // Filter out the visible property and only pass the actual column data
+    const columnsToSave = localColumns.map(({ visible, ...col }) => col as AdvancedTableColumn<Task>)
+    onColumnsChange(columnsToSave)
     onOpenChange(false)
   }
 
@@ -47,10 +56,10 @@ export function TasksColumnCustomizationSheet({
         <div className="flex-1 overflow-y-auto py-4">
           <div className="space-y-2">
             {localColumns.map((column) => (
-              <div key={column.key} className="flex items-center gap-3 p-3 border rounded-lg bg-white">
+              <div key={String(column.key)} className="flex items-center gap-3 p-3 border rounded-lg bg-white">
                 <GripVertical className="h-4 w-4 text-gray-400 cursor-grab" />
                 <span className="flex-1 text-sm font-medium">{column.header}</span>
-                <Switch checked={column.visible !== false} onCheckedChange={() => toggleColumnVisibility(column.key)} />
+                <Switch checked={column.visible !== false} onCheckedChange={() => toggleColumnVisibility(String(column.key))} />
               </div>
             ))}
           </div>

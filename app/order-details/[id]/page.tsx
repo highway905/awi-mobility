@@ -3,15 +3,16 @@ import { OrderDetailsPageContent } from "@/features/order-details/components/ord
 import { OrderDetailsPageSkeleton } from "@/features/order-details/components/order-details-page-skeleton"
 
 interface OrderDetailsPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
-export default function OrderDetailsPage({ params }: OrderDetailsPageProps) {
+export default async function OrderDetailsPage({ params }: OrderDetailsPageProps) {
+  const { id } = await params
   return (
     <Suspense fallback={<OrderDetailsPageSkeleton />}>
-      <OrderDetailsPageContent orderId={params.id} />
+      <OrderDetailsPageContent orderId={id} />
     </Suspense>
   )
 }

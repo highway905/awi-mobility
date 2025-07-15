@@ -471,5 +471,4 @@ export const SimpleTable = {
 }
 
 // Export types with unique names
-export type { SimpleTableColumn }
 export type { SimpleTableRef }
