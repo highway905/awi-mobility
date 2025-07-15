@@ -1,0 +1,48 @@
+
+name: Mobility Deployment
+on:
+  push:
+    branches: [ qa ]
+    paths-ignore:
+      - '**.md'
+jobs:
+  build-and-deploy-all:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Log in to ACR
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+    
+    # API Gateway
+    - name: Build and push Mobility
+      run: |
+        docker build -f Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/api-qa-mobility:latest .
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/api-qa-mobility:latest
+             
+    # Setup kubectl and connect to AKS cluster
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      
+    - name: Set AKS context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: H905_AWI_Group
+        cluster-name: h905awi_dev_aks
+    
+    # Update Mobility deployment
+    - name: Update Mobility Deployment
+      run: |
+        kubectl set image deployment/api-qa-mobility api-qa-mobility=${{ secrets.ACR_LOGIN_SERVER }}/api-qa-mobility:latest
+        kubectl rollout status deployment/api-qa-mobility
