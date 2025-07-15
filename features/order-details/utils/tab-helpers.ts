@@ -10,7 +10,7 @@ export const tabs = [
   { id: "transportation", label: "Transportation Details" },
   { id: "shipping", label: "Shipping & Tracking" },
   { id: "picking", label: "Picking & Packing" },
-  { id: "pricing", label: "Pricing" },
+  // { id: "pricing", label: "Pricing" },
   { id: "log", label: "Log" },
   { id: "warehouse", label: "Warehouse Action" },
 ];

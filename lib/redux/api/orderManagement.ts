@@ -13,6 +13,7 @@ const tagInjection: any = api.enhanceEndpoints({
     'stepperStatus',
     'boxLabelDetails',
     'boxLabels',
+    'palletLabels',
     'getShippingList',
     'loadOrderAttachment',
     'getCustomDetailsOrder',
@@ -276,6 +277,7 @@ export const orderManagement: any = tagInjection.injectEndpoints({
       },
       providesTags: ['palletLabels'],
       transformResponse: (res: any) => {
+        console.log('res', res);
         return res?.response;
       },
     }),

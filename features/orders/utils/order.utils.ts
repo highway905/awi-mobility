@@ -387,7 +387,7 @@ export const setLocalStorageItem = <T>(key: string, value: T): void => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    console.warn('Failed to save to localStorage:', error);
+    // Failed to save to localStorage
   }
 };
 

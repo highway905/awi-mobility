@@ -1,3 +1,7 @@
+// Export new comprehensive types
+export * from './order-details.types'
+
+// Legacy types for backward compatibility
 export interface Task {
   id: string
   task: string

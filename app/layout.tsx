@@ -4,14 +4,42 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ReduxProvider } from "@/lib/redux/provider"
 import ErrorBoundary from "@/components/error-boundary"
+import PWAInstaller from "@/components/pwa-installer"
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Warehouse Management System",
+  title: "AWI - Warehouse Management System",
   description: "Advanced warehouse management system for inventory and shipping",
+  generator: "Next.js",
+  manifest: "/manifest.json",
+  keywords: ["warehouse", "management", "inventory", "shipping", "logistics", "PWA"],
+  authors: [{ name: "AWI Team" }],
+  creator: "AWI Team",
+  publisher: "AWI",
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: "/favicon/favicon-32x32.png",
+    shortcut: "/favicon/favicon-16x16.png",
+    apple: "/favicon/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AWI",
+    startupImage: "/favicon/apple-touch-icon.png",
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'application-name': 'AWI',
+    'msapplication-TileColor': '#000000',
+    'theme-color': '#000000',
+  },
 }
 
 export default function RootLayout({
@@ -24,6 +52,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ErrorBoundary>
           <ReduxProvider>
+            <PWAInstaller />
             {children}
             <ToastContainer
               position="top-right"

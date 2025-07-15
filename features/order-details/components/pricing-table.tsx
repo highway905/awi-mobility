@@ -2,11 +2,12 @@
 
 import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
 import { TableRow, TableCell } from "@/components/ui/table"
-import { pricingData, totalAmount } from "../mocks/pricing-data"
+import { NoData, NoDataIcons } from "./no-data"
 import type { PricingItem } from "../types"
+import type { OrderDetailsResponse } from "../types/order-details.types"
 
 interface PricingTableProps {
-  orderDetails?: any; // Type for the order details from API
+  orderDetails?: OrderDetailsResponse;
 }
 
 const columns: DataTableColumn<PricingItem>[] = [
@@ -36,9 +37,19 @@ const columns: DataTableColumn<PricingItem>[] = [
 ]
 
 export function PricingTable({ orderDetails }: PricingTableProps = {}) {
-  // In a real implementation, you'd use orderDetails to calculate pricing
-  // For now, we'll use mock data
-  const pricing = pricingData;
+  // Pricing data would typically come from a separate API endpoint
+  // For now, show empty state since pricing is not included in basic order details
+  const pricing: PricingItem[] = []
+  const totalAmount = pricing.reduce((sum, item) => sum + item.total, 0)
+  
+  // Create empty state component
+  const emptyState = (
+    <NoData 
+      title="No pricing information"
+      description="No pricing details have been added for this order yet."
+      icon={<NoDataIcons.pricing />}
+    />
+  );
   
   const tableFooter = (
     <TableRow className="border-none h-10">
@@ -61,6 +72,7 @@ export function PricingTable({ orderDetails }: PricingTableProps = {}) {
             data={pricing} 
             columns={columns} 
             footer={tableFooter}
+            emptyState={emptyState}
           />
         </div>
       </div>

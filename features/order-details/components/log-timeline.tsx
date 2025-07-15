@@ -85,27 +85,10 @@ export function LogsContent({ logs, taskLogs = [] }: LogsContentProps) {
     (a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
   )
   
-  // Mock task logs for example purposes if none are provided
+  // Sort task logs by creation date (newest first)
   const sortedTaskLogs = taskLogs.length > 0 
     ? [...taskLogs].sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())
-    : [
-        {
-          id: "task-1",
-          taskDetails: "Inventory check completed",
-          notes: "All items verified and counted",
-          user: "John Doe",
-          createdDate: "2025-06-20T10:30:00Z",
-          taskStatus: "Completed"
-        },
-        {
-          id: "task-2",
-          taskDetails: "QC inspection initiated",
-          notes: null,
-          user: "Sarah Smith",
-          createdDate: "2025-06-19T14:15:00Z",
-          taskStatus: "In Progress"
-        }
-      ];
+    : []
 
   return (
     <Card className="h-full flex flex-col">

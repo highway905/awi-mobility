@@ -574,7 +574,7 @@ export function InventoryPageContent() {
             data={inventoryItems}
             columns={columns}
             onRowClick={handleRowClick}
-            enableBulkSelection={true}
+            // enableBulkSelection={true}
             stickyColumns={{
               left: ["sku"],
               right: ["actions"],

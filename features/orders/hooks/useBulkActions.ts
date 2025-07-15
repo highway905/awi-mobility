@@ -254,7 +254,7 @@ export const createOrderBulkActions = (onRefresh?: () => void): BulkAction[] => 
     label: 'Export Selected',
     description: 'Export selected orders to CSV/Excel',
     handler: async (selectedItems) => {
-      // Mock export functionality
+      // Export functionality
       return new Promise((resolve) => {
         setTimeout(() => {
           // In real implementation, this would call export API
@@ -273,7 +273,7 @@ export const createOrderBulkActions = (onRefresh?: () => void): BulkAction[] => 
     description: 'Bulk update status of selected orders',
     requiresConfirmation: true,
     handler: async (selectedItems) => {
-      // Mock status update
+      // Status update functionality
       return new Promise((resolve) => {
         setTimeout(() => {
           const successCount = Math.floor(selectedItems.length * 0.9) // 90% success rate
@@ -301,7 +301,7 @@ export const createOrderBulkActions = (onRefresh?: () => void): BulkAction[] => 
     isDestructive: true,
     confirmMessage: 'Are you sure you want to cancel the selected orders? This action cannot be undone.',
     handler: async (selectedItems) => {
-      // Mock cancel functionality
+      // Cancel functionality
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve({
@@ -321,7 +321,7 @@ export const createOrderBulkActions = (onRefresh?: () => void): BulkAction[] => 
     description: 'Assign selected orders to a user',
     requiresConfirmation: true,
     handler: async (selectedItems) => {
-      // Mock assignment functionality
+      // Assignment functionality
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve({
@@ -341,7 +341,7 @@ export const createOrderBulkActions = (onRefresh?: () => void): BulkAction[] => 
     description: 'Create duplicates of selected orders',
     requiresConfirmation: true,
     handler: async (selectedItems) => {
-      // Mock duplication functionality
+      // Duplication functionality
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve({
@@ -360,7 +360,7 @@ export const createOrderBulkActions = (onRefresh?: () => void): BulkAction[] => 
     label: 'Send Notifications',
     description: 'Send email notifications for selected orders',
     handler: async (selectedItems) => {
-      // Mock notification functionality
+      // Notification functionality
       return new Promise((resolve) => {
         setTimeout(() => {
           const successCount = Math.floor(selectedItems.length * 0.95) // 95% success rate

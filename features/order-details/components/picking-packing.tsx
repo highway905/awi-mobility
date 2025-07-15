@@ -1,10 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SearchWithCamera } from "@/components/ui/search-with-camera"
+import { NoData, NoDataIcons } from "./no-data"
 
 // Define the interface for line items from the API
 interface LineItem {
@@ -48,6 +50,33 @@ export function PickingPacking({ lineItems = [] }: PickingPackingProps) {
     actualQty: parseInt(item.qty) || 0,
   }));
 
+  // State to manage actual quantities for each item
+  const [actualQuantities, setActualQuantities] = useState<Record<string, number>>(() => {
+    const initialQuantities: Record<string, number> = {};
+    pickingItems.forEach(item => {
+      initialQuantities[item.id] = item.actualQty;
+    });
+    return initialQuantities;
+  });
+
+  // Handle quantity change
+  const handleQuantityChange = (itemId: string, value: string) => {
+    const numValue = parseInt(value) || 0;
+    setActualQuantities(prev => ({
+      ...prev,
+      [itemId]: numValue
+    }));
+  };
+
+  // Create empty state component
+  const emptyState = (
+    <NoData 
+      title="No items to pick"
+      description="No items are available for picking and packing for this order."
+      icon={<NoDataIcons.table />}
+    />
+  );
+
   const columns: DataTableColumn<PickingItem>[] = [
     {
       key: "sku",
@@ -78,7 +107,15 @@ export function PickingPacking({ lineItems = [] }: PickingPackingProps) {
     {
       key: "actualQty",
       header: "Actual Qty",
-      render: (value) => <Input type="number" value={value} min="0" className="w-24 mx-auto" />,
+      render: (value, item) => (
+        <Input 
+          type="number" 
+          value={actualQuantities[item.id] ?? value} 
+          onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+          min="0" 
+          className="w-24 mx-auto" 
+        />
+      ),
       headerClassName: "text-gray-500",
       className: "text-center",
     },
@@ -98,7 +135,11 @@ export function PickingPacking({ lineItems = [] }: PickingPackingProps) {
         />
       </CardHeader>
       <CardContent className="overflow-auto p-0">
-        <DataTable columns={columns} data={pickingItems} />
+        <DataTable 
+          columns={columns} 
+          data={pickingItems} 
+          emptyState={emptyState}
+        />
       </CardContent>
     </Card>
   )

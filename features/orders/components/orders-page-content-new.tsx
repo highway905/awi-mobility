@@ -484,7 +484,6 @@ export function OrdersPageContent() {
         onClose={() => setShowColumnSheet(false)}
         onColumnsChange={(columns) => {
           // Columns are automatically managed by the hook
-          console.log('Columns updated:', columns)
         }}
       />
     </div>

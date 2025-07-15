@@ -2,6 +2,7 @@
 
 import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { NoData, NoDataIcons } from "./no-data"
 
 interface TrackingDetails {
   shippingAndTracking: {
@@ -95,6 +96,15 @@ export function ShippingTracking({ trackingDetails, deliveryDetails }: ShippingT
     },
   ]
 
+  // Create empty state component
+  const emptyState = (
+    <NoData 
+      title="No tracking events"
+      description="No tracking information is available for this shipment yet."
+      icon={<NoDataIcons.shipping />}
+    />
+  );
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-4">
@@ -135,7 +145,11 @@ export function ShippingTracking({ trackingDetails, deliveryDetails }: ShippingT
         <div>
           <h3 className="text-lg font-semibold mb-4">Tracking Events</h3>
           {/* In a real app, you would fetch tracking events from the carrier's API using the tracking number */}
-          <DataTable columns={columns} data={sampleTrackingEvents} />
+          <DataTable 
+            columns={columns} 
+            data={sampleTrackingEvents} 
+            emptyState={emptyState}
+          />
         </div>
       </CardContent>
     </Card>

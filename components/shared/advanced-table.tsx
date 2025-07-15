@@ -70,7 +70,6 @@ interface AdvancedTableContextValue<T> {
   handlePressCancel: () => void
   handleRowClick: (row: T, rowIndex: number, event: React.MouseEvent) => void
   isLongPressing: boolean
-  pressStartTime: number
   // Infinite scroll
   hasNextPage: boolean
   isFetchingNextPage: boolean
@@ -312,8 +311,10 @@ function AdvancedTableRoot<T>({
     (rowIndex: number, event: React.MouseEvent | React.TouchEvent) => {
       if (!enableBulkSelection) return
 
-      // Prevent default to avoid text selection
-      event.preventDefault()
+      // Only prevent default for touch events to avoid interfering with mouse clicks
+      if (event.type === 'touchstart') {
+        event.preventDefault()
+      }
 
       const currentTime = Date.now()
       setPressStartTime(currentTime)
@@ -349,11 +350,9 @@ function AdvancedTableRoot<T>({
       setLongPressTimer(null)
     }
 
-    // Small delay to prevent immediate state reset
-    setTimeout(() => {
-      setIsLongPressing(false)
-      setPressStartTime(0)
-    }, 50)
+    // Reset long press state immediately
+    setIsLongPressing(false)
+    setPressStartTime(0)
   }, [enableBulkSelection, longPressTimer])
 
   const handlePressCancel = useCallback(() => {
@@ -369,12 +368,20 @@ function AdvancedTableRoot<T>({
 
   const handleRowClick = useCallback(
     (row: T, rowIndex: number, event: React.MouseEvent) => {
-      // Prevent event bubbling to avoid any interference
-      event.stopPropagation()
+      // If bulk selection is not enabled, just handle the click immediately
+      if (!enableBulkSelection) {
+        if (onRowClick && redirectEnabled) {
+          event.preventDefault()
+          event.stopPropagation()
+          onRowClick(row)
+        }
+        return
+      }
 
       // If we're in selection mode, toggle selection instead of redirecting
       if (isSelectionMode) {
         event.preventDefault()
+        event.stopPropagation()
         toggleRowSelection(rowIndex)
         return
       }
@@ -382,30 +389,23 @@ function AdvancedTableRoot<T>({
       // If we're in the middle of a long press, prevent click
       if (isLongPressing) {
         event.preventDefault()
+        event.stopPropagation()
         return
       }
 
-      // If we just finished a long press (within 300ms), don't trigger click
-      if (enableBulkSelection && pressStartTime > 0 && Date.now() - pressStartTime < 300) {
-        event.preventDefault()
-        return
-      }
-
-      // Normal row click - redirect to new page
+      // Normal row click - redirect to new page immediately
       if (onRowClick && redirectEnabled) {
-        // Small delay to ensure no interference from touch events
-        setTimeout(() => {
-          onRowClick(row)
-        }, 10)
+        event.preventDefault()
+        event.stopPropagation()
+        onRowClick(row)
       }
     },
     [
+      enableBulkSelection,
       isLongPressing,
       isSelectionMode,
       toggleRowSelection,
-      pressStartTime,
       onRowClick,
-      enableBulkSelection,
       redirectEnabled,
     ],
   )
@@ -575,7 +575,6 @@ function AdvancedTableRoot<T>({
     handlePressCancel,
     handleRowClick,
     isLongPressing,
-    pressStartTime,
     hasNextPage: false,
     isFetchingNextPage: false,
   }
@@ -605,7 +604,7 @@ function AdvancedTableContainer({
   isFetchingNextPage = false,
   className,
 }: AdvancedTableContainerProps) {
-  const { enableBulkSelection, pressStartTime } = useAdvancedTable()
+  const { enableBulkSelection } = useAdvancedTable()
   const tableContainerRef = useRef<HTMLDivElement>(null)
 
   // Update context with infinite scroll props
@@ -644,8 +643,8 @@ function AdvancedTableContainer({
       ref={tableContainerRef}
       className={cn("flex-1 overflow-auto relative", className)}
       style={{
-        WebkitUserSelect: enableBulkSelection && pressStartTime > 0 ? "none" : "auto",
-        userSelect: enableBulkSelection && pressStartTime > 0 ? "none" : "auto",
+        WebkitUserSelect: enableBulkSelection ? "none" : "auto",
+        userSelect: enableBulkSelection ? "none" : "auto",
         scrollbarGutter: "stable",
       }}
     >
@@ -781,19 +780,19 @@ function AdvancedTableBody() {
           )}
           onClick={(e) => handleRowClick(row.original, row.index, e)}
           onMouseDown={
-            enableBulkSelection
+            enableBulkSelection && !isSelectionMode
               ? (e) => handlePressStart(row.index, e)
               : undefined
           }
-          onMouseUp={enableBulkSelection ? handlePressEnd : undefined}
-          onMouseLeave={enableBulkSelection ? handlePressCancel : undefined}
+          onMouseUp={enableBulkSelection && !isSelectionMode ? handlePressEnd : undefined}
+          onMouseLeave={enableBulkSelection && !isSelectionMode ? handlePressCancel : undefined}
           onTouchStart={
-            enableBulkSelection
+            enableBulkSelection && !isSelectionMode
               ? (e) => handlePressStart(row.index, e)
               : undefined
           }
-          onTouchEnd={enableBulkSelection ? handlePressEnd : undefined}
-          onTouchCancel={enableBulkSelection ? handlePressCancel : undefined}
+          onTouchEnd={enableBulkSelection && !isSelectionMode ? handlePressEnd : undefined}
+          onTouchCancel={enableBulkSelection && !isSelectionMode ? handlePressCancel : undefined}
           onContextMenu={enableBulkSelection ? (e) => e.preventDefault() : undefined}
         >
           {row.getVisibleCells().map((cell) => {

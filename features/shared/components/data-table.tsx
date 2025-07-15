@@ -15,15 +15,47 @@ interface DataTableProps<T> {
   columns: DataTableColumn<T>[]
   className?: string
   footer?: React.ReactNode
+  emptyState?: React.ReactNode
 }
 
-export function DataTable<T>({ data, columns, className, footer }: DataTableProps<T>) {
+export function DataTable<T>({ 
+  data, 
+  columns, 
+  className, 
+  footer, 
+  emptyState 
+}: DataTableProps<T>) {
   const getValue = (row: T, key: keyof T | string): any => {
     if (typeof key === "string" && key.includes(".")) {
       // Handle nested properties like 'user.name'
       return key.split(".").reduce((obj: any, k) => obj?.[k], row)
     }
     return row[key as keyof T]
+  }
+
+  // If no data and emptyState is provided, show empty state
+  if (data.length === 0 && emptyState) {
+    return (
+      <div className={cn("rounded-md border", className)}>
+        <Table>
+          <TableHeader>
+            <TableRow className="h-10">
+              {columns.map((column, index) => (
+                <TableHead
+                  key={index}
+                  className={cn("h-10 px-3 text-left align-middle font-medium text-gray-500", column.headerClassName)}
+                >
+                  {column.header}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+        </Table>
+        <div className="min-h-[300px] flex items-center justify-center">
+          {emptyState}
+        </div>
+      </div>
+    )
   }
 
   return (

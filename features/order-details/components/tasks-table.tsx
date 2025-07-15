@@ -5,11 +5,34 @@ import { Card } from "@/components/ui/card"
 import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
 import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { tasksData, statusStyles } from "../mocks/tasks-data"
+import { NoData, NoDataIcons } from "./no-data"
 import type { Task } from "../types"
+import type { OrderDetailsResponse, TaskLog } from "../types/order-details.types"
 
 interface TasksTableProps {
-  orderDetails?: any; // Type for the order details from API
+  orderDetails?: OrderDetailsResponse;
+}
+
+// Status styling for task statuses
+const statusStyles = {
+  "In Progress": "bg-orange-100 text-orange-800",
+  "Paused": "bg-purple-100 text-purple-800",
+  "On Hold": "bg-pink-100 text-pink-800",
+  "Yet to Start": "bg-cyan-100 text-cyan-800",
+  "Waiting": "bg-yellow-100 text-yellow-800",
+  "Started": "bg-green-100 text-green-800",
+  "Completed": "bg-blue-100 text-blue-800",
+} as const
+
+// Transform task logs to tasks for display
+const transformTaskLogsToTasks = (taskLogs: TaskLog[]): Task[] => {
+  return taskLogs.map((log, index) => ({
+    id: log.id || `task-${index}`,
+    task: log.taskDetails || 'Unknown Task',
+    assignedTo: log.user || null,
+    priority: "Medium" as const, // Default priority since not in API
+    status: (log.taskStatus as any) || "Waiting" as const
+  }))
 }
 
 const columns: DataTableColumn<Task>[] = [
@@ -63,9 +86,18 @@ const columns: DataTableColumn<Task>[] = [
 ]
 
 export function TasksTable({ orderDetails }: TasksTableProps = {}) {
-  // Use orderDetails to fetch or filter tasks if needed
-  // For now, we'll continue using the mock data
-  const tasks = tasksData;
+  // Transform task logs from order details into tasks
+  const taskLogs = orderDetails?.taskLogs || []
+  const tasks = transformTaskLogsToTasks(taskLogs)
+  
+  // Create empty state component
+  const emptyState = (
+    <NoData 
+      title="No tasks found"
+      description="No tasks have been created for this order yet."
+      icon={<NoDataIcons.tasks />}
+    />
+  );
   
   return (
     <Card>
@@ -73,7 +105,11 @@ export function TasksTable({ orderDetails }: TasksTableProps = {}) {
         <div className="mb-4">
           <h2 className="text-xl font-semibold">Tasks</h2>
         </div>
-        <DataTable data={tasks} columns={columns} />
+        <DataTable 
+          data={tasks} 
+          columns={columns} 
+          emptyState={emptyState}
+        />
       </div>
     </Card>
   )

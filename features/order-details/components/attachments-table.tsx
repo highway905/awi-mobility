@@ -6,6 +6,7 @@ import { DataTable, type DataTableColumn } from "@/features/shared/components/da
 import { Upload, Download, Trash2 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { NoData, NoDataIcons } from "./no-data"
 
 interface APIAttachment {
   id: string;
@@ -33,6 +34,15 @@ export function AttachmentsTable({ attachments }: AttachmentsTableProps) {
     documentName: attachment.fileActualName,
     category: attachment.categoryName,
   }));
+
+  // Create empty state component
+  const emptyState = (
+    <NoData 
+      title="No attachments found"
+      description="No documents have been attached to this order yet."
+      icon={<NoDataIcons.attachments />}
+    />
+  );
 
   const columns: DataTableColumn<AttachmentRow>[] = [
     {
@@ -77,7 +87,11 @@ export function AttachmentsTable({ attachments }: AttachmentsTableProps) {
         </Button>
       </CardHeader>
       <CardContent className="p-0 overflow-auto">
-        <DataTable columns={columns} data={attachmentRows} />
+        <DataTable 
+          columns={columns} 
+          data={attachmentRows} 
+          emptyState={emptyState}
+        />
       </CardContent>
     </Card>
   )

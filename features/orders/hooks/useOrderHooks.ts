@@ -51,7 +51,7 @@ export function useLocalStorage<T>(
         }
       }
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error)
+      // Error reading localStorage
     } finally {
       setIsHydrated(true)
     }
@@ -70,7 +70,7 @@ export function useLocalStorage<T>(
         return valueToStore
       })
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error)
+      // Error setting localStorage
     }
   }, [key])
 
@@ -442,7 +442,6 @@ export function useOrderApiProcessor() {
 
       return { orders, totalCount, isFirstPage }
     } catch (error) {
-      console.error('Error processing order API response:', error)
       return { orders: [], totalCount: 0, isFirstPage: true }
     }
   }, [])
