@@ -52,6 +52,7 @@ export const useLogin = (): UseLoginReturn => {
         setError("Invalid credentials. Please check your email and password.")
       }
     } catch (error: unknown) {
+      console.log("Error :",error)
       const apiError = error as LoginErrorResponse
 
       // Handle API error response format
