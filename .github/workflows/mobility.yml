@@ -30,13 +30,6 @@ jobs:
         echo "HOST_API_FE=${{ secrets.HOST_API_FE }}" >> .env
         echo 'ENCRYPT_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCKNOjgcbVefxYyNP05VE74AzxtywzM6qsQuAQc/Y75MUm4q03tO6BCwAH+dSJXkxloA9yol0ve44i9bVRu45uyRlTXy9AenA6Vg54ECZ6s/as6wbqvTICTBAk3dUU3bOG3lGRkJYzbsyyWjTl7AiSI3Z4BqyimdBzSBkVqLTCa2QIDAQAB-----END PUBLIC KEY-----' >> .env
         
-        # Add the key to .env as a single line with \n escape sequences
-        echo -n "ENCRYPT_PUBLIC_KEY=" >> .env
-        cat temp_key.pem | tr '\n' '\' | sed 's/\\$/\\n/g' >> .env
-        
-        # Clean up temporary file
-        rm temp_key.pem
-    
     - name: Create next.config.js
       run: |
         cat <<'EOF' > next.config.js
