@@ -29,7 +29,7 @@ jobs:
       run: |
         echo "HOST_API_KEY=${{ secrets.HOST_API_KEY }}" >> .env
         echo "HOST_API_FE=${{ secrets.HOST_API_FE }}" >> .env
-        echo "ENCRYPT_PUBLIC_KEY=${{ secrets.ENCRYPT_PUBLIC_KEY }}" >> .env
+        echo "ENCRYPT_PUBLIC_KEY="﻿-----BEGIN PUBLIC KEY-----MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCKNOjgcbVefxYyNP05VE74AzxtywzM6qsQuAQc/Y75MUm4q03tO6BCwAH+dSJXkxloA9yol0ve44i9bVRu45uyRlTXy9AenA6Vg54ECZ6s/as6wbqvTICTBAk3dUU3bOG3lGRkJYzbsyyWjTl7AiSI3Z4BqyimdBzSBkVqLTCa2QIDAQAB-----END PUBLIC KEY-----"" >> .env
 
     - name: Create next.config.js
       run: |
