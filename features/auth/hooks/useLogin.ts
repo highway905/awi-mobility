@@ -26,6 +26,9 @@ export const useLogin = (): UseLoginReturn => {
   }, [])
 
   const login = useCallback(async (data: LoginFormData) => {
+    console.log("123")
+    console.log("Data : ", data)
+    
     try {
       setError(null)
 
@@ -52,8 +55,9 @@ export const useLogin = (): UseLoginReturn => {
         setError("Invalid credentials. Please check your email and password.")
       }
     } catch (error: unknown) {
-      console.log("Error :",error)
+      console.error("Error :",error)
       const apiError = error as LoginErrorResponse
+       console.error("Error API:",apiError)
 
       // Handle API error response format
       if (apiError?.response?.validationFailed && apiError?.response?.validationErrors) {
