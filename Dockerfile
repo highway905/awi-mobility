@@ -2,29 +2,34 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Install dependencies
+# Copy and install dependencies
 COPY package*.json ./
 
-# Force install correct SWC binary for Alpine (musl-based)
+# Install correct SWC binary for Alpine (needed for Next.js)
 RUN npm install @next/swc-linux-x64-musl --save-dev
 
+# Install all dependencies cleanly
 RUN npm ci
 
-# Copy app source
+# Copy all source files
 COPY . .
 
-# Build app for QA
+# Set env for build
 ENV NODE_ENV=qa
+
+# Build the Next.js app
 RUN npm run build
 
-# Reinstall only prod dependencies (including SWC for Alpine)
-RUN npm ci --only=production --ignore-scripts
+# Remove dev dependencies and reinstall production-only
+RUN npm ci --omit=dev --ignore-scripts
 
-# Stage 2: Production Image
+---
+
+# Stage 2: Production
 FROM node:18-alpine AS production
 WORKDIR /app
 
-# Copy necessary files
+# Copy only required production files
 COPY package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
@@ -34,4 +39,5 @@ COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
 ENV NODE_ENV=qa
 EXPOSE 3000
+
 CMD ["npm", "start"]
