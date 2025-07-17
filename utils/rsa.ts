@@ -2,7 +2,7 @@ const forge = require('node-forge');
 
 const publicKey = process.env.ENCRYPT_PUBLIC_KEY;
 console.log("publicKey 1:")
-console.log(publicKey)
+console.log(process.env)
 
 // Encrypts a message with the given public key
 export const encryptedMessage = (message: string) => {
