@@ -1,10 +1,12 @@
 const forge = require('node-forge');
 
 const publicKey = process.env.ENCRYPT_PUBLIC_KEY;
-// console.log(publicKey)
+console.log("publicKey 1:")
+console.log(publicKey)
 
 // Encrypts a message with the given public key
 export const encryptedMessage = (message: string) => {
+  console.log("publicKey 2:")
   console.log(publicKey)
 
   const publicRsaKey = forge.pki.publicKeyFromPem(publicKey);
