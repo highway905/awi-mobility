@@ -2,6 +2,7 @@
 // import { LayoutDashboard, CheckSquare, Package, Archive, Settings, Truck, Bell, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { useLogout } from "@/features/auth"
 
 interface SidebarProps {
   isOpen: boolean
@@ -71,13 +72,14 @@ const getIcon = (iconName: string) => {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  // Use the proper logout hook
+  const { logout, isLoading: isLoggingOut } = useLogout()
 
   const handleLogout = async () => {
     try {
-      // TODO: Implement logout functionality
-      if (typeof window !== 'undefined') {
-        window.location.href = "/login";
-      }
+      // Use the proper logout function that handles API call and redirection
+      await logout()
+      // The logout function will handle redirection to login
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -149,8 +151,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           {/* User Avatar */}
           <div className="flex items-center justify-center" onClick={handleLogout}>
-            <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs">😊</span>
+            <div className="w-8 h-8 bg-orange-400 rounded-full flex items-center justify-center cursor-pointer">
+              {isLoggingOut ? (
+                <span className="text-white text-xs">...</span>
+              ) : (
+                <span className="text-white text-xs">😊</span>
+              )}
             </div>
           </div>
         </div>

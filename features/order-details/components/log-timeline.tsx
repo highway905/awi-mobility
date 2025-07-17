@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { FileText, Clock } from "lucide-react"
 
 interface OrderLog {
   id: string
@@ -28,6 +29,7 @@ interface LogTimelineProps {
 interface LogsContentProps {
   logs: OrderLog[]
   taskLogs?: TaskLog[]
+  isLoading?: boolean
 }
 
 function formatDate(dateString: string): string {
@@ -46,6 +48,28 @@ function formatDate(dateString: string): string {
 }
 
 function LogTimeline({ logs, title }: LogTimelineProps) {
+  // Show empty state only if we have definitive empty data (not loading)
+  if (logs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 px-4">
+        <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
+          {title.includes('Order') ? (
+            <FileText className="w-8 h-8 text-gray-400" />
+          ) : (
+            <Clock className="w-8 h-8 text-gray-400" />
+          )}
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No {title}</h3>
+        <p className="text-gray-500 text-center text-sm">
+          {title.includes('Order') 
+            ? "No order activities have been logged yet." 
+            : "No task activities have been logged yet."
+          }
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">{title}</h3>
@@ -79,26 +103,28 @@ function LogTimeline({ logs, title }: LogTimelineProps) {
   )
 }
 
-export function LogsContent({ logs, taskLogs = [] }: LogsContentProps) {
+export function LogsContent({ logs, taskLogs = [], isLoading = false }: LogsContentProps) {
   // Sort logs by date in descending order (newest first)
-  const sortedOrderLogs = [...logs].sort(
+  const sortedOrderLogs = [...(logs || [])].sort(
     (a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime()
   )
   
   // Sort task logs by creation date (newest first)
-  const sortedTaskLogs = taskLogs.length > 0 
-    ? [...taskLogs].sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())
+  const sortedTaskLogs = (taskLogs || []).length > 0 
+    ? [...(taskLogs || [])].sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime())
     : []
 
   return (
-    <Card className="h-full flex flex-col">
-      
-      <CardContent className="overflow-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-4">
+    <Card className="h-full flex flex-col border-none">
+      {/* <CardHeader>
+        <CardTitle>Log Timeline</CardTitle>
+      </CardHeader> */}
+      <CardContent className="overflow-auto h-full">
+        <div className="h-full flex flex-col md:flex-row md:divide-x md:divide-gray-200">
+          <div className="flex-1 md:pr-6">
             <LogTimeline logs={sortedOrderLogs} title="Order Logs" />
           </div>
-          <div className=" p-4">
+          <div className="flex-1 md:pl-6">
             <LogTimeline logs={sortedTaskLogs} title="Task Logs" />
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getUserCred } from "@/utils/helper";
+import { getUserCred, resetUserCred, isValidUserCredentials } from "@/utils/helper";
 
 export default function HomePage() {
   const router = useRouter();
@@ -14,24 +14,30 @@ export default function HomePage() {
       try {
         const userCred = getUserCred("userCred");
         
-        if (userCred?.token) {
-          // Redirect to the orders page if the token exists
+        // Validate token and expiry
+        if (userCred && isValidUserCredentials(userCred)) {
+          // Redirect to the orders page if the token is valid
           router.push("/orders");
         } else {
-          // Redirect to the login page if the token is missing
+          // Clear invalid/expired credentials and redirect to login
+          if (userCred) {
+            console.log("Invalid or expired credentials found, clearing...");
+            resetUserCred();
+          }
           router.push("/login");
         }
       } catch (error) {
         console.error("Navigation error:", error);
-        // Fallback to login page on error
+        // Clear any corrupted data and fallback to login page
+        resetUserCred();
         router.push("/login");
       } finally {
         setIsLoading(false);
       }
     };
     
-    // Use a timeout to ensure the router is ready and localStorage is accessible
-    const timer = setTimeout(checkAuthAndRedirect, 300);
+    // Use a shorter timeout to ensure the router is ready and localStorage is accessible
+    const timer = setTimeout(checkAuthAndRedirect, 100);
     return () => clearTimeout(timer);
   }, [router]);
   

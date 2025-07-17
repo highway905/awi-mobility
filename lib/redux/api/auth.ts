@@ -1,5 +1,5 @@
 import { api } from '@/lib/redux/api';
-import { loginCredentials } from '@/utils/helper';
+import { loginCredentials, resetUserCred } from '@/utils/helper';
 
 // Passing Tag arguments to builder api to use automatic re-fetching 😀
 const tagInjection: any = api.enhanceEndpoints({ addTagTypes: ['UserProfile'] });
@@ -18,8 +18,8 @@ export const authApi = tagInjection.injectEndpoints({
       },
       invalidatesTags: ['UserProfile'],
       transformResponse: (res: any) => {
-        if (res?.response) {
-          // Store user credentials in localStorage
+        if (res?.response && (res?.statusCode === 0 || res?.statusCode === 200)) {
+          // Only store credentials if login was successful
           loginCredentials('userCred', res?.response);
           loginCredentials('warehouseIds', res?.response);
           
@@ -29,6 +29,11 @@ export const authApi = tagInjection.injectEndpoints({
           }
         }
         return res;
+      },
+      transformErrorResponse: (errorResponse: any) => {
+        // Clear any existing credentials on login error
+        resetUserCred();
+        return errorResponse;
       },
     }),
     resetEmail: builder.mutation({
@@ -93,6 +98,19 @@ export const authApi = tagInjection.injectEndpoints({
         };
       },
     }),
+    logout: builder.mutation({
+      query() {
+        return {
+          url: `core/api/auth/logout`,
+          method: 'post',
+        };
+      },
+      transformResponse: (res: any) => {
+        // Clear all stored credentials on logout
+        resetUserCred();
+        return res;
+      },
+    }),
   }),
   overrideExisting: true,
 });
@@ -106,4 +124,5 @@ export const {
   useForgotPasswordMutation,
   useResendLinkMutation,
   useTokenValidateMutation,
+  useLogoutMutation,
 } = authApi;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Sidebar } from "@/components/layout/sidebar"
 import { PageHeader } from "@/features/shared/components/page-header"
 import { AdvancedTable, type AdvancedTableColumn } from "@/features/shared/components/advanced-table"
+import { GlobalErrorFallback } from "@/components/shared"
 import { CustomerDetailsCard } from "./customer-details-card"
 import { useInventoryDetails, type TransactionHistory } from "../hooks/use-inventory-details"
 import { DetailsCardSkeleton } from "./details-card-skeleton"
@@ -81,8 +82,8 @@ export function InventoryDetailsPageContent() {
         key: "dateTime",
         header: "Date & Time",
         render: (value: string) => (
-          <div className="truncate" title={value}>
-            <span className="font-medium text-gray-900">{value}</span>
+          <div className="font-medium text-gray-900 truncate" title={value}>
+            {value}
           </div>
         ),
         sortable: true,
@@ -95,7 +96,7 @@ export function InventoryDetailsPageContent() {
         render: (value: string) => (
           <div className="truncate" title={value}>
             <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${
+              className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
                 value.includes("Inbound") || value.includes("Moving In")
                   ? "bg-green-100 text-green-800"
                   : value.includes("Outbound")
@@ -120,8 +121,8 @@ export function InventoryDetailsPageContent() {
         key: "transactionId",
         header: "Transaction ID",
         render: (value: string) => (
-          <div className="truncate" title={value}>
-            <span className="font-medium text-blue-600">{value}</span>
+          <div className="font-medium text-blue-600 truncate" title={value}>
+            {value}
           </div>
         ),
         sortable: true,
@@ -131,8 +132,8 @@ export function InventoryDetailsPageContent() {
         key: "referenceId",
         header: "Reference ID",
         render: (value: string) => (
-          <div className="truncate" title={value}>
-            <span className="text-gray-700">{value}</span>
+          <div className="text-gray-700 truncate" title={value}>
+            {value}
           </div>
         ),
         sortable: true,
@@ -142,8 +143,8 @@ export function InventoryDetailsPageContent() {
         key: "location",
         header: "Location",
         render: (value: string) => (
-          <div className="truncate" title={value}>
-            <span className="text-gray-700">{value}</span>
+          <div className="text-gray-700 truncate" title={value}>
+            {value}
           </div>
         ),
         sortable: true,
@@ -227,7 +228,14 @@ export function InventoryDetailsPageContent() {
       <div className="h-screen flex flex-col bg-dashboard-background">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-red-500">No inventory allocation ID provided</div>
+          <GlobalErrorFallback
+            variant="card"
+            title="Invalid Request"
+            description="No inventory allocation ID provided. Please check the URL and try again."
+            showRetry={false}
+            showBack={true}
+            onBack={() => window.history.back()}
+          />
         </div>
       </div>
     )
@@ -239,7 +247,13 @@ export function InventoryDetailsPageContent() {
       <div className="h-screen flex flex-col bg-dashboard-background">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-red-500">Error loading inventory details: {JSON.stringify(inventoryError)}</div>
+          <GlobalErrorFallback
+            variant="card"
+            title="Failed to load inventory details"
+            description="We encountered an error while loading the inventory details. Please try again."
+            onRetry={() => window.location.reload()}
+            showRetry={true}
+          />
         </div>
       </div>
     )
@@ -291,8 +305,8 @@ export function InventoryDetailsPageContent() {
           </div>
         ) : null}
 
-        {/* Transaction History Table - FIXED: Exact same structure as inventory page */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[600px]">
+        {/* Transaction History Table - FIXED: Proper height constraints */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ height: 'calc(100vh - 280px)' }}>
           <AdvancedTable.Root
             data={transactions}
             columns={columns}
@@ -300,7 +314,8 @@ export function InventoryDetailsPageContent() {
             enableBulkSelection={true}
             onBulkAction={handleBulkAction}
             stickyColumns={{
-              
+              left: ["dateTime"],
+              right: []
             }}
             isLoading={isTableLoading}
             emptyMessage={getEmptyMessage()}
@@ -313,6 +328,7 @@ export function InventoryDetailsPageContent() {
               <AdvancedTable.Table>
                 <AdvancedTable.Header />
                 <AdvancedTable.Body />
+                <AdvancedTable.Footer footerData={footerData} />
               </AdvancedTable.Table>
             </AdvancedTable.Container>
           </AdvancedTable.Root>

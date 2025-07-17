@@ -581,7 +581,7 @@ function AdvancedTableRoot<T>({
 
   return (
     <AdvancedTableContext.Provider value={contextValue}>
-      <div className={cn("flex flex-col h-full rounded-lg border border-gray-200 bg-white overflow-hidden relative", className)}>
+      <div className={cn("flex flex-col h-full w-full rounded-lg bg-white overflow-hidden relative", className)}>
         {children}
       </div>
     </AdvancedTableContext.Provider>
@@ -641,14 +641,15 @@ function AdvancedTableContainer({
   return (
     <div
       ref={tableContainerRef}
-      className={cn("flex-1 overflow-auto relative", className)}
+      className={cn("flex-1 overflow-auto relative w-full h-full", className)}
       style={{
         WebkitUserSelect: enableBulkSelection ? "none" : "auto",
         userSelect: enableBulkSelection ? "none" : "auto",
         scrollbarGutter: "stable",
+        width: "100%",
       }}
     >
-      <div className="min-w-max w-full">
+      <div className="min-w-full w-full h-auto">
         {children}
       </div>
     </div>
@@ -658,7 +659,11 @@ function AdvancedTableContainer({
 // Table component with fixed layout and width preservation
 function AdvancedTableTable({ children }: { children: React.ReactNode }) {
   return (
-    <table className="w-full border-collapse min-w-max">
+    <table className="w-full border-collapse table-auto" style={{ 
+      width: '100%',
+      tableLayout: 'auto',
+      borderSpacing: 0,
+    }}>
       {children}
     </table>
   )
@@ -671,28 +676,29 @@ function AdvancedTableHeader() {
   return (
     <thead className="sticky top-0 bg-white z-30 shadow-sm">
       {table.getHeaderGroups().map((headerGroup) => (
-        <tr key={headerGroup.id} className="h-10 border-b border-gray-200">
+        <tr key={headerGroup.id} className="h-12 border-b border-gray-200" style={{ height: "48px", minHeight: "48px", maxHeight: "48px" }}>
           {headerGroup.headers.map((header) => {
             const stickyStyles = getStickyStyles(header.column.id, false)
             const column = columns.find((c: any) => c.id === header.column.id)
 
-            return (                <th
-                  key={header.id}
-                  className={cn(
-                    "h-10 px-4 text-left align-middle text-sm font-medium text-gray-600 bg-white",
-                    stickyStyles.position && "z-20",
-                  )}
-                  style={{
-                    ...stickyStyles,
-                    backgroundColor: "white",
-                    width: (column as any)?.width || (column as any)?.minWidth || 120,
-                    minWidth: (column as any)?.minWidth || 120,
-                    maxWidth: (column as any)?.maxWidth || 'none',
-                    position: "sticky",
-                    top: 0,
-                    zIndex: stickyStyles.position ? 40 : 30,
-                  }}
-                >
+            return (
+              <th
+                key={header.id}
+                className={cn(
+                  "h-12 px-4 py-3 text-left align-middle text-sm font-medium text-gray-600 bg-white",
+                  stickyStyles.position && "z-20",
+                )}
+                style={{
+                  ...stickyStyles,
+                  backgroundColor: "white",
+                  width: 'auto',
+                  minWidth: (column as any)?.minWidth || 120,
+                  position: "sticky",
+                  top: 0,
+                  zIndex: stickyStyles.position ? 40 : 30,
+                  height: "48px",
+                }}
+              >
                 {header.isPlaceholder ? null : (
                   <div className="flex items-center gap-1 truncate">
                     <span className="overflow-hidden text-ellipsis whitespace-nowrap">
@@ -753,10 +759,10 @@ function AdvancedTableBody() {
   // Show empty state when no data
   if (!rows.length && !isLoading) {
     return (
-      <tbody className="h-full">
-        <tr className="h-full">
-          <td colSpan={columns.length} className="h-full">
-            <div className="flex items-center justify-center h-full min-h-[400px]">
+      <tbody>
+        <tr>
+          <td colSpan={columns.length} className="py-16">
+            <div className="flex items-center justify-center">
               <div className="text-gray-500">
                 {emptyMessage}
               </div>
@@ -768,7 +774,7 @@ function AdvancedTableBody() {
   }
 
   return (
-    <tbody className="align-top">
+    <tbody>
       {rows.map((row) => (
         <tr
           key={row.id}
@@ -778,6 +784,7 @@ function AdvancedTableBody() {
             onRowClick ? "cursor-pointer" : "",
             enableBulkSelection && selectedRows.has(row.index) && "bg-blue-50",
           )}
+          style={{ height: "48px", minHeight: "48px", maxHeight: "48px" }}
           onClick={(e) => handleRowClick(row.original, row.index, e)}
           onMouseDown={
             enableBulkSelection && !isSelectionMode
@@ -803,19 +810,19 @@ function AdvancedTableBody() {
               <td
                 key={cell.id}
                 className={cn(
-                  "h-12 px-4 align-middle bg-white",
+                  "h-12 px-4 py-3 align-middle bg-white",
                   stickyStyles.position && "z-10"
                 )}
                 style={{
                   ...stickyStyles,
                   backgroundColor: "white",
-                  width: (column as any)?.width || (column as any)?.minWidth || 120,
+                  width: 'auto',
                   minWidth: (column as any)?.minWidth || 120,
-                  maxWidth: (column as any)?.maxWidth || 'none',
+                  height: "48px",
                 }}
               >
                 <div 
-                  className="overflow-hidden text-ellipsis whitespace-nowrap w-full"
+                  className="overflow-hidden text-ellipsis w-full leading-tight"
                   title={typeof flexRender(cell.column.columnDef.cell, cell.getContext()) === 'string' 
                     ? flexRender(cell.column.columnDef.cell, cell.getContext()) as string 
                     : undefined}

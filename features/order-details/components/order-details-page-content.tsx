@@ -2,19 +2,25 @@
 
 import { Sidebar } from "@/components/layout/sidebar"
 import { SwipeableTabs } from "@/features/shared/components/swipeable-tabs"
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
+import { GlobalLoader, GlobalErrorFallback } from "@/components/shared"
 import { TasksTable } from "./tasks-table"
-import { AttachmentsTable } from "./attachments-table"
+import { AttachmentsTable, AttachmentsActions } from "./attachments-table"
 import { TransportationDetails } from "./transportation-details"
 import { ShippingTracking } from "./shipping-tracking"
-import { PickingPacking } from "./picking-packing"
-import { TabLoadingSkeleton } from "./tab-loading-skeleton"
+import { PickingPacking, PickingPackingActions } from "./picking-packing"
 import { LogsContent } from "./log-timeline"
 import { WarehouseAction } from "./warehouse-action"
+import { TabContentWrapper } from "./tabs/tab-content-wrapper"
 import { OrderInformation } from "./tabs"
 import { OrderDetailsHeader } from "./order-details-header"
-import { tabs, getSkeletonTypeForTab, TabType } from "../utils/tab-helpers"
+import { tabs, TabType } from "../utils/tab-helpers"
 import { useOrderDetailsPage } from "../hooks/useOrderDetailsPage"
+import { 
+  TableSkeleton, 
+  OrderInfoSkeleton, 
+  TimelineSkeleton, 
+  CardsSkeleton 
+} from "./tabs/tab-skeletons"
 
 interface OrderDetailsPageContentProps {
   orderId: string
@@ -57,103 +63,159 @@ export function OrderDetailsPageContent({ orderId }: OrderDetailsPageContentProp
   } = useOrderDetailsPage({ orderId })
 
   const renderTabContent = (tabId: string) => {
-    if (isOverallLoading) {
-      return <TabLoadingSkeleton type={getSkeletonTypeForTab(tabId as TabType)} />
-    }
-
     if (hasError) {
       return (
-        <Card className="h-full flex flex-col">
-          <div className="p-6">
-            <div className="text-center">
-              <p className="text-red-500 mb-4">{errorMessage}</p>
-              <button 
-                onClick={handleRetry}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        </Card>
+        <GlobalErrorFallback
+          variant="card"
+          error={errorMessage}
+          title="Failed to load order details"
+          description="We encountered an error while loading the order details. Please try again."
+          onRetry={handleRetry}
+          showRetry={true}
+        />
       )
     }
 
     if (isEmpty) {
       return (
-        <Card className="h-full flex flex-col items-center justify-center">
-          <div className="p-6">
-            <p className="text-gray-500">No order details found</p>
-          </div>
-        </Card>
+        <GlobalErrorFallback
+          variant="card"
+          title="No order details found"
+          description="The requested order could not be found. It may have been deleted or moved."
+          showRetry={false}
+          showBack={true}
+          onBack={() => window.history.back()}
+        />
       )
     }
 
-    if (!orderDetails || !safeData) {
-      return (
-        <Card className="h-full flex flex-col">
-          <div className="p-6">
-            <p className="text-gray-500">Failed to load order details</p>
-          </div>
-        </Card>
-      )
+    // Show skeleton loading when overall loading is true
+    if (isOverallLoading) {
+      switch (tabId) {
+        case "order-details":
+          return (
+            <TabContentWrapper hasCard={true}>
+              <OrderInfoSkeleton />
+            </TabContentWrapper>
+          )
+        case "tasks":
+          return (
+            <TabContentWrapper title="Tasks" hasCard={true}>
+              <TableSkeleton />
+            </TabContentWrapper>
+          )
+        case "attachments":
+          return (
+            <TabContentWrapper title="Attachments" actions={<AttachmentsActions />} hasCard={true}>
+              <TableSkeleton />
+            </TabContentWrapper>
+          )
+        case "transportation":
+          return (
+            <TabContentWrapper title="Transportation Details" hasCard={true}>
+              <CardsSkeleton />
+            </TabContentWrapper>
+          )
+        case "shipping":
+          return (
+            <TabContentWrapper title="Shipping & Tracking" hasCard={true}>
+              <TableSkeleton />
+            </TabContentWrapper>
+          )
+        case "picking":
+          return (
+            <TabContentWrapper title="Picking & Packing" actions={<PickingPackingActions />} hasCard={true}>
+              <TableSkeleton />
+            </TabContentWrapper>
+          )
+        case "log":
+          return (
+            <TabContentWrapper hasCard={true}>
+              <TimelineSkeleton />
+            </TabContentWrapper>
+          )
+        case "warehouse":
+          return (
+            <TabContentWrapper title="Warehouse Actions" hasCard={true}>
+              <TableSkeleton />
+            </TabContentWrapper>
+          )
+        default:
+          return (
+            <TabContentWrapper>
+              <OrderInfoSkeleton />
+            </TabContentWrapper>
+          )
+      }
     }
 
     switch (tabId) {
       case "order-details":
-        return <OrderInformation orderDetails={orderDetails} />
+        return (
+          <TabContentWrapper hasCard={true}>
+            <OrderInformation orderDetails={orderDetails} />
+          </TabContentWrapper>
+        )
       case "tasks":
-        return <TasksTable orderDetails={orderDetails} />
+        return (
+          <TabContentWrapper title="Tasks" hasCard={true}>
+            <TasksTable orderDetails={orderDetails} />
+          </TabContentWrapper>
+        )
       case "attachments":
-        return <AttachmentsTable attachments={safeData.attachments} />
+        return (
+          <TabContentWrapper title="Attachments" actions={<AttachmentsActions />} hasCard={true}>
+            <AttachmentsTable attachments={safeData?.attachments || []} />
+          </TabContentWrapper>
+        )
       case "transportation":
-        return <TransportationDetails 
-          handlingDetails={safeData.handlingDetails}
-          transportationSchedule={safeData.transportationSchedule}
-          carrierDetails={safeData.carrierDetails}
-        />
+        return (
+          <TabContentWrapper title="Transportation Details" hasCard={true}>
+            <TransportationDetails 
+              handlingDetails={safeData?.handlingDetails}
+              transportationSchedule={safeData?.transportationSchedule}
+              carrierDetails={safeData?.carrierDetails}
+            />
+          </TabContentWrapper>
+        )
       case "shipping":
-        return <ShippingTracking 
-          trackingDetails={safeData.trackingDetails}
-          deliveryDetails={safeData.deliveryDetails}
-        />
+        return (
+          <TabContentWrapper title="Shipping & Tracking" hasCard={true}>
+            <ShippingTracking 
+              trackingDetails={safeData?.trackingDetails}
+              deliveryDetails={safeData?.deliveryDetails}
+            />
+          </TabContentWrapper>
+        )
       case "picking":
-        return <PickingPacking lineItems={safeData.lineItems} />
+        return (
+          <TabContentWrapper title="Picking & Packing" actions={<PickingPackingActions />} hasCard={true}>
+            <PickingPacking lineItems={safeData?.lineItems || []} />
+          </TabContentWrapper>
+        )
       case "log":
         return (
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <CardTitle className="font-bold text-lg p-2">Log Timeline</CardTitle>
-            </CardHeader>
-            <CardContent className="border-none">
-              <LogsContent logs={safeData.orderLogs} taskLogs={safeData.taskLogs} />
-            </CardContent>
-          </Card>
+          <TabContentWrapper hasCard={true}>
+            <LogsContent logs={safeData?.orderLogs || []} taskLogs={safeData?.taskLogs || []} />
+          </TabContentWrapper>
         )
       case "warehouse":
         return (
-          <Card className="h-full flex flex-col p-6">
-            <CardHeader className="p-0 pb-4">
-              <CardTitle className="text-xl font-semibold">Warehouse Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 border-none">
-              <WarehouseAction 
-                instructions={safeData.instructions} 
-                lineItems={safeData.lineItems}
-                palletLabelsData={palletLabelsData}
-                palletLabelsError={palletLabelsError}
-                palletLabelsLoading={palletLabelsLoading}
-              />
-            </CardContent>
-          </Card>
+          <TabContentWrapper title="Warehouse Actions" hasCard={true}>
+            <WarehouseAction 
+              instructions={safeData?.instructions || undefined} 
+              lineItems={safeData?.lineItems || []}
+              palletLabelsData={palletLabelsData}
+              palletLabelsError={palletLabelsError}
+              palletLabelsLoading={palletLabelsLoading}
+            />
+          </TabContentWrapper>
         )
       default:
         return (
-          <Card className="h-full flex flex-col">
-            <div className="p-6">
-              <p className="text-gray-500">Content not found</p>
-            </div>
-          </Card>
+          <TabContentWrapper>
+            <p className="text-gray-500">Content not found</p>
+          </TabContentWrapper>
         )
     }
   }

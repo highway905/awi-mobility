@@ -1,6 +1,32 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+/**
+ * Validate if token is valid and not expired (simplified for middleware)
+ */
+function isValidTokenForMiddleware(token: string, expiryDate?: string): boolean {
+  if (!token) return false;
+  
+  try {
+    // Check expiry date if provided
+    if (expiryDate) {
+      const expiry = new Date(expiryDate);
+      const now = new Date();
+      if (expiry <= now) {
+        return false;
+      }
+    }
+    
+    // Basic JWT structure validation
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // This function can be marked `async` if using `await` inside
 export function middleware(request: NextRequest) {
   // Get the pathname
@@ -30,11 +56,38 @@ export function middleware(request: NextRequest) {
   }
   
   // Check for authentication
-  const userCred = request.cookies.get('userCred')
+  const userCredCookie = request.cookies.get('userCred')
   
-  // If no authentication and not a public path, redirect to login
-  if (!userCred?.value) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  let isAuthenticated = false
+  
+  if (userCredCookie?.value) {
+    try {
+      const userCred = JSON.parse(userCredCookie.value)
+      
+      // Validate token and expiry
+      if (userCred?.token && isValidTokenForMiddleware(userCred.token, userCred.expiryDate)) {
+        isAuthenticated = true
+      }
+    } catch (error) {
+      // Invalid cookie data
+      console.error('Invalid userCred cookie:', error)
+      isAuthenticated = false
+    }
+  }
+  
+  // If user is authenticated and trying to access login, redirect to orders
+  if (isAuthenticated && path === '/login') {
+    return NextResponse.redirect(new URL('/orders', request.url))
+  }
+  
+  // If no valid authentication and not a public path, redirect to login
+  if (!isAuthenticated) {
+    // Clear invalid cookie if it exists
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    if (userCredCookie?.value) {
+      response.cookies.delete('userCred')
+    }
+    return response
   }
   
   // User is authenticated, allow access

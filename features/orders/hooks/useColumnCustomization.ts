@@ -32,43 +32,31 @@ const DEFAULT_COLUMNS: OrderColumnConfig[] = [
 export function useColumnCustomization(pageType: string = 'orders') {
   const [state, setState] = useState<ColumnCustomizationState>({
     columns: DEFAULT_COLUMNS,
-    isLoading: false,
+    isLoading: false, // Set to false since we're not making API calls
     error: null,
     isDirty: false
   })
 
-  // API hooks
+  // API hooks - DISABLED to always use base columns
   const { data: columnsData, isLoading: isLoadingColumns, error: fetchError } = useGetCustomColumnsSettingsQuery({
     pageType,
     moduleType: 'order-management'
+  }, {
+    skip: true // Skip API call to always use base columns
   })
 
   const [saveColumnSettings, { isLoading: isSaving }] = useCustomColumnsSettingsMutation()
 
-  // Load columns from API on mount
+  // Load columns - DISABLED API loading, always use defaults
   useEffect(() => {
-    if (columnsData?.success && columnsData?.data) {
-      try {
-        const apiColumns = columnsData.data.columns || []
-        if (apiColumns.length > 0) {
-          setState(prev => ({
-            ...prev,
-            columns: apiColumns.map((col: any, index: number) => ({
-              id: col.columnKey || col.id,
-              label: col.displayName || col.label,
-              visible: col.isVisible !== false,
-              order: col.displayOrder !== undefined ? col.displayOrder : index,
-              width: col.width || getDefaultWidth(col.columnKey || col.id),
-              pinned: col.isPinned ? (col.pinnedSide || 'left') : null
-            })).sort((a: OrderColumnConfig, b: OrderColumnConfig) => a.order - b.order)
-          }))
-        }
-      } catch (error) {
-        console.warn('Failed to parse column settings:', error)
-        setState(prev => ({ ...prev, error: 'Failed to load column settings' }))
-      }
-    }
-  }, [columnsData])
+    // Always use default columns, ignore API response
+    setState(prev => ({
+      ...prev,
+      columns: [...DEFAULT_COLUMNS],
+      isLoading: false,
+      error: null
+    }))
+  }, []) // Remove dependencies to prevent API-based updates
 
   // Helper function to get default width
   const getDefaultWidth = (columnId: string): number => {
@@ -139,48 +127,12 @@ export function useColumnCustomization(pageType: string = 'orders') {
     }))
   }, [])
 
-  // Save column settings to API
+  // Save column settings - DISABLED
   const saveColumns = useCallback(async () => {
-    try {
-      setState(prev => ({ ...prev, isLoading: true, error: null }))
-
-      const payload = {
-        pageType,
-        moduleType: 'order-management',
-        columns: state.columns.map(col => ({
-          columnKey: col.id,
-          displayName: col.label,
-          isVisible: col.visible,
-          displayOrder: col.order,
-          width: col.width,
-          isPinned: col.pinned !== null,
-          pinnedSide: col.pinned || 'left'
-        }))
-      }
-
-      const result = await saveColumnSettings(payload).unwrap()
-      
-      if (result.success) {
-        setState(prev => ({ 
-          ...prev, 
-          isDirty: false, 
-          isLoading: false,
-          error: null 
-        }))
-        return { success: true }
-      } else {
-        throw new Error(result.message || 'Failed to save column settings')
-      }
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to save column settings'
-      setState(prev => ({ 
-        ...prev, 
-        error: errorMessage,
-        isLoading: false 
-      }))
-      return { success: false, error: errorMessage }
-    }
-  }, [state.columns, pageType, saveColumnSettings])
+    // Column customization disabled - do nothing
+    console.log('Column save is disabled')
+    return { success: true }
+  }, [])
 
   // Get visible columns in order
   const getVisibleColumns = useCallback(() => {
@@ -205,8 +157,8 @@ export function useColumnCustomization(pageType: string = 'orders') {
     columns: state.columns,
     visibleColumns: getVisibleColumns(),
     stickyColumns: getStickyColumns(),
-    isLoading: state.isLoading || isLoadingColumns || isSaving,
-    error: state.error || fetchError,
+    isLoading: false, // Always false since API is disabled
+    error: null, // Always null since API is disabled
     isDirty: state.isDirty,
     
     // Actions

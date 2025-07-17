@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { getUserCred } from "@/utils/helper"
+import { getUserCred, resetUserCred, isValidUserCredentials } from "@/utils/helper"
 
 interface UseAuthRedirectReturn {
   isRedirecting: boolean
@@ -13,12 +13,18 @@ export const useAuthRedirect = (): UseAuthRedirectReturn => {
   useEffect(() => {
     try {
       const userCred = getUserCred("userCred")
-      if (userCred?.token && !isRedirecting) {
+      
+      // Validate token and expiry before redirecting
+      if (userCred && isValidUserCredentials(userCred) && !isRedirecting) {
         setIsRedirecting(true)
         router.push("/orders")
+      } else if (userCred && !isValidUserCredentials(userCred)) {
+        // Clear invalid credentials
+        resetUserCred()
       }
     } catch (error) {
-      // Silent fail - user just needs to login normally
+      // Silent fail - clear any corrupted data and user just needs to login normally
+      resetUserCred()
     }
   }, [router, isRedirecting])
 

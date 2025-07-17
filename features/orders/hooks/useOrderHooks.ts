@@ -442,6 +442,7 @@ export function useOrderApiProcessor() {
 
       return { orders, totalCount, isFirstPage }
     } catch (error) {
+      console.error('❌ Error processing order response:', error);
       return { orders: [], totalCount: 0, isFirstPage: true }
     }
   }, [])

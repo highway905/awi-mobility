@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Check, ChevronDown, ChevronRight } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { NoData, NoDataIcons } from "./no-data"
+import { GlobalErrorFallback } from "@/components/shared"
 
 interface Instructions {
   id: string
@@ -250,10 +250,11 @@ export function WarehouseAction({
       return (
         <TableRow>
           <TableCell colSpan={8} className="text-center py-8">
-            <NoData 
+            <GlobalErrorFallback 
+              variant="card"
               title="No warehouse items found"
               description="No items are available for warehouse actions for this order."
-              icon={<NoDataIcons.table />}
+              showRetry={false}
             />
           </TableCell>
         </TableRow>

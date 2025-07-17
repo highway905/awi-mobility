@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AdvancedTable, type AdvancedTableColumn } from "@/features/shared/components/advanced-table"
 import { Sidebar } from "@/components/layout/sidebar"
 import { PageHeader } from "@/features/shared/components/page-header"
+import { GlobalErrorFallback } from "@/components/shared"
 import { InventoryEmptyState } from "./inventory-empty-state"
 import { InventoryColumnCustomizationSheet } from "./inventory-column-customization-sheet"
 import { InventoryFilterSheet } from "./inventory-filter-sheet"
@@ -215,8 +216,11 @@ export function InventoryPageContent() {
     hasNextPage,
     isLoading,
     isLoadingMore,
+    isError,
+    errorMessage,
     fetchNextPage,
     resetPagination,
+    refetch,
   } = useInventoryData(apiPayload, shouldFetchData)
 
   const handleRowClick = useCallback(
@@ -314,7 +318,11 @@ export function InventoryPageContent() {
       {
         key: "sku",
         header: "SKU",
-        render: (value: string) => <span className="font-medium text-blue-600">{value}</span>,
+        render: (value: string) => (
+          <div className="font-medium text-blue-600 truncate">
+            {value}
+          </div>
+        ),
         sortable: true,
         minWidth: 120,
       },
@@ -324,7 +332,11 @@ export function InventoryPageContent() {
             {
               key: "warehouse" as keyof InventoryItem,
               header: "Warehouse",
-              render: (value: string) => <span className="text-gray-900">{value}</span>,
+              render: (value: string) => (
+                <div className="text-gray-900 truncate">
+                  {value}
+                </div>
+              ),
               sortable: true,
               minWidth: 100,
             },
@@ -332,42 +344,66 @@ export function InventoryPageContent() {
       {
         key: "location",
         header: "Location",
-        render: (value: string) => <span className="text-gray-700">{value}</span>,
+        render: (value: string) => (
+          <div className="text-gray-700 truncate">
+            {value}
+          </div>
+        ),
         sortable: true,
         minWidth: showCustomerColumns ? 150 : 150,
       },
       {
         key: "palletId",
         header: "Pallet ID",
-        render: (value: string) => <span className="text-gray-700">{value}</span>,
+        render: (value: string) => (
+          <div className="text-gray-700 truncate">
+            {value}
+          </div>
+        ),
         sortable: true,
         minWidth: 100,
       },
       {
         key: "inbound",
         header: "Inbound",
-        render: (value: number) => <span className="text-right font-medium">{value}</span>,
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value}
+          </div>
+        ),
         sortable: true,
         minWidth: 80,
       },
       {
         key: "outbound",
         header: "Outbound",
-        render: (value: number) => <span className="text-right font-medium">{value}</span>,
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value}
+          </div>
+        ),
         sortable: true,
         minWidth: 80,
       },
       {
         key: "adjustment",
         header: "Adjustment",
-        render: (value: number) => <span className="text-right font-medium">{value}</span>,
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value}
+          </div>
+        ),
         sortable: true,
         minWidth: 100,
       },
       {
         key: "onHand",
         header: "On Hand",
-        render: (value: number) => <span className="text-right font-medium">{value}</span>,
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value}
+          </div>
+        ),
         sortable: true,
         minWidth: 80,
       },
@@ -376,14 +412,22 @@ export function InventoryPageContent() {
             {
               key: "available" as keyof InventoryItem,
               header: "Available",
-              render: (value: number) => <span className="text-right font-medium">{value || 0}</span>,
+              render: (value: number) => (
+                <div className="text-right font-medium">
+                  {value || 0}
+                </div>
+              ),
               sortable: true,
               minWidth: 80,
             },
             {
               key: "onHold" as keyof InventoryItem,
               header: "On Hold",
-              render: (value: number) => <span className="text-right font-medium">{value || 0}</span>,
+              render: (value: number) => (
+                <div className="text-right font-medium">
+                  {value || 0}
+                </div>
+              ),
               sortable: true,
               minWidth: 80,
             },
@@ -567,39 +611,56 @@ export function InventoryPageContent() {
         </div>
       </div>
 
-      {/* Flexible Table Section - Takes remaining space */}
-      <div className="flex-1 px-4 pb-4 min-h-0">
-        {showTable ? (
-          <AdvancedTable.Root
-            data={inventoryItems}
-            columns={columns}
-            onRowClick={handleRowClick}
-            // enableBulkSelection={true}
-            stickyColumns={{
-              left: ["sku"],
-              right: ["actions"],
+      {/* Error Display */}
+      {errorMessage && showTable && (
+        <div className="flex-shrink-0 px-4 mb-2">
+          <GlobalErrorFallback 
+            variant="inline"
+            error={errorMessage}
+            onRetry={() => {
+              resetPagination()
+              refetch()
             }}
-            isLoading={isLoading}
-            emptyMessage={isLoading ? "Loading inventory..." : "No inventory items found matching your criteria"}
-            // Controlled sorting props
-            sorting={sorting}
-            onSortingChange={handleSortingChange}
-            manualSorting={true}
-          >
-            <AdvancedTable.Container
-              hasNextPage={hasNextPage}
-              fetchNextPage={fetchNextPage}
-              isFetchingNextPage={isLoadingMore}
+            showRetry={true}
+          />
+        </div>
+      )}
+
+      {/* Flexible Table Section - Takes remaining space with proper height constraints */}
+      <div className="flex-1 px-4 pb-4 min-h-0 overflow-hidden">
+        {showTable ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full">
+            <AdvancedTable.Root
+              data={inventoryItems}
+              columns={columns}
+              onRowClick={handleRowClick}
+              // enableBulkSelection={true}
+              stickyColumns={{
+                left: ["sku"],
+                right: ["actions"],
+              }}
+              isLoading={isLoading}
+              emptyMessage={isLoading ? "Loading inventory..." : errorMessage || "No inventory items found matching your criteria"}
+              // Controlled sorting props
+              sorting={sorting}
+              onSortingChange={handleSortingChange}
+              manualSorting={true}
             >
-              <AdvancedTable.Table>
-                <AdvancedTable.Header />
-                <AdvancedTable.Body />
-                <AdvancedTable.Footer footerData={footerData} />
-              </AdvancedTable.Table>
-            </AdvancedTable.Container>
-          </AdvancedTable.Root>
+              <AdvancedTable.Container
+                hasNextPage={hasNextPage}
+                fetchNextPage={fetchNextPage}
+                isFetchingNextPage={isLoadingMore}
+              >
+                <AdvancedTable.Table>
+                  <AdvancedTable.Header />
+                  <AdvancedTable.Body />
+                  <AdvancedTable.Footer footerData={footerData} />
+                </AdvancedTable.Table>
+              </AdvancedTable.Container>
+            </AdvancedTable.Root>
+          </div>
         ) : (
-          <div className="h-full bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="h-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <InventoryEmptyState />
           </div>
         )}

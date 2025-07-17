@@ -4,9 +4,8 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SearchWithCamera } from "@/components/ui/search-with-camera"
-import { NoData, NoDataIcons } from "./no-data"
+import { GlobalErrorFallback } from "@/components/shared"
 
 // Define the interface for line items from the API
 interface LineItem {
@@ -35,9 +34,10 @@ interface PickingItem {
 
 interface PickingPackingProps {
   lineItems: LineItem[];
+  actions?: React.ReactNode;
 }
 
-export function PickingPacking({ lineItems = [] }: PickingPackingProps) {
+export function PickingPacking({ lineItems = [], actions }: PickingPackingProps) {
   // Transform API data for display, ensure lineItems is an array
   const safeLineItems = Array.isArray(lineItems) ? lineItems : [];
   const pickingItems: PickingItem[] = safeLineItems.map(item => ({
@@ -70,10 +70,11 @@ export function PickingPacking({ lineItems = [] }: PickingPackingProps) {
 
   // Create empty state component
   const emptyState = (
-    <NoData 
+    <GlobalErrorFallback 
+      variant="card"
       title="No items to pick"
       description="No items are available for picking and packing for this order."
-      icon={<NoDataIcons.table />}
+      showRetry={false}
     />
   );
 
@@ -122,25 +123,24 @@ export function PickingPacking({ lineItems = [] }: PickingPackingProps) {
   ]
 
   return (
-    <Card className="h-full flex flex-col p-6">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-0  pb-4">
-        <CardTitle className="text-xl font-semibold">Picking & Packing</CardTitle>
-        <SearchWithCamera 
-          placeholder="Search items..." 
-          width="240px" 
-          onCamera={() => {
-            // Handle camera/barcode scanning
-            alert("Camera functionality would open here");
-          }}
-        />
-      </CardHeader>
-      <CardContent className="overflow-auto p-0">
-        <DataTable 
-          columns={columns} 
-          data={pickingItems} 
-          emptyState={emptyState}
-        />
-      </CardContent>
-    </Card>
+    <DataTable 
+      columns={columns} 
+      data={pickingItems} 
+      emptyState={emptyState}
+    />
+  )
+}
+
+// Create the actions component for the TabContentWrapper
+export function PickingPackingActions() {
+  return (
+    <SearchWithCamera 
+      placeholder="Search items..." 
+      width="240px" 
+      onCamera={() => {
+        // Handle camera/barcode scanning
+        alert("Camera functionality would open here");
+      }}
+    />
   )
 }

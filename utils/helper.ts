@@ -9,13 +9,23 @@ export const loginCredentials = (key: string, value: any) => {
       // Store in localStorage
       localStorage.setItem(key, JSON.stringify(value));
       
-      // Also store in cookies for middleware access
-      if (key === 'userCred' && value?.token) {
-        Cookies.set('userCred', JSON.stringify({
-          token: value.token,
-          id: value.id,
-          role: value.role
-        }), { expires: 1, path: '/' }); // 1 day expiry
+      // Also store in cookies for middleware access with proper expiry
+      if (key === 'userCred' && value?.token && value?.expiryDate) {
+        const expiryDate = new Date(value.expiryDate);
+        const now = new Date();
+        
+        // Only set cookie if token is not expired
+        if (expiryDate > now) {
+          Cookies.set('userCred', JSON.stringify({
+            token: value.token,
+            id: value.id,
+            role: value.role,
+            expiryDate: value.expiryDate
+          }), { 
+            expires: Math.max(0.1, (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)), // Convert to days
+            path: '/' 
+          });
+        }
       }
     } catch (error) {
       console.error('Error storing credentials:', error);
@@ -50,6 +60,7 @@ export const resetUserCred = () => {
     try {
       // Clear localStorage
       localStorage.removeItem('userCred');
+      localStorage.removeItem('warehouseIds');
       localStorage.removeItem('orderListFilter');
       localStorage.removeItem('orderCurrentTab');
       
@@ -271,6 +282,48 @@ export const orderCurrentTabSaved = (key: any, value: any) => {
   if (typeof window !== 'undefined') {
     return localStorage.setItem(key, value);
   }
+};
+
+/**
+ * Validate if token is valid and not expired
+ */
+export const isValidToken = (token: string, expiryDate?: string): boolean => {
+  if (!token) return false;
+  
+  try {
+    // Check expiry date if provided
+    if (expiryDate) {
+      const expiry = new Date(expiryDate);
+      const now = new Date();
+      if (expiry <= now) {
+        return false;
+      }
+    }
+    
+    // Basic JWT structure validation
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    // Try to decode payload for additional validation
+    const payload = JSON.parse(atob(parts[1]));
+    if (payload.exp) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      return payload.exp > currentTime;
+    }
+    
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Validate user credentials object
+ */
+export const isValidUserCredentials = (userCred: any): boolean => {
+  if (!userCred || !userCred.token) return false;
+  
+  return isValidToken(userCred.token, userCred.expiryDate);
 };
 
 export const formatDate = (dateString: string | Date): string => {

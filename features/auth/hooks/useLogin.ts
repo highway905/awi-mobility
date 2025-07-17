@@ -8,6 +8,7 @@ import type {
   LoginErrorResponse 
 } from "../types/auth.types"
 import { handleLoginSuccess, isLoginSuccessful, extractValidationErrors } from "../utils/auth.utils"
+import { isValidToken } from "@/utils/helper"
 
 interface UseLoginReturn {
   login: (data: LoginFormData) => Promise<void>
@@ -45,12 +46,19 @@ export const useLogin = (): UseLoginReturn => {
 
       const response = await loginMutation(body).unwrap() as LoginSuccessResponse
 
-      // Check if login was successful
+      // Check if login was successful and token exists
       if (isLoginSuccessful(response)) {
-        // Successful login - redirect with a slight delay to ensure credentials are saved
-        handleLoginSuccess(() => {
-          router.push("/orders")
-        })
+        // Double-check that we have a token and it's valid before redirecting
+        if (response?.response?.token && isValidToken(response.response.token, response.response.expiryDate)) {
+          console.log("Valid token received, redirecting to orders page")
+          // Successful login - redirect with a shorter delay to ensure credentials are saved
+          handleLoginSuccess(() => {
+            router.push("/dashboard")
+          }, 100)
+        } else {
+          console.log("Login response didn't contain valid token:", response)
+          setError("Authentication failed. Invalid or expired token received.")
+        }
       } else {
         setError("Invalid credentials. Please check your email and password.")
       }

@@ -92,8 +92,8 @@ export function TransportationDetails({
   carrierDetails 
 }: TransportationDetailsProps) {
   return (
-    <Card>
-      <div className="p-6 space-y-8">
+    <Card className="border-none">
+      <div className=" space-y-8">
         {/* Handling Details */}
         <div>
           <h3 className="text-lg font-semibold mb-4">Handling Details</h3>
@@ -174,14 +174,14 @@ export function TransportationDetails({
               <label className="text-sm text-gray-500">Need by Ship Date</label>
               <div className="font-medium">{formatDate(transportationSchedule?.needByShipDate || '')}</div>
             </div>
-            <div>
+            {/* <div>
               <label className="text-sm text-gray-500">Warehouse Instructions</label>
               <div className="font-medium">{safeValue(transportationSchedule?.warehouseInstructions)}</div>
             </div>
             <div>
               <label className="text-sm text-gray-500">Carrier Instructions</label>
               <div className="font-medium">{safeValue(transportationSchedule?.carrierInstructions)}</div>
-            </div>
+            </div> */}
           </div>
         </div>
 

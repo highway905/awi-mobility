@@ -73,6 +73,7 @@ export function useInventoryData(apiPayload: any, shouldFetch: boolean) {
     refetch,
     isSuccess,
     isError,
+    error,
   } = useGetInventoryItemsListQuery(currentApiPayload, {
     refetchOnMountOrArgChange: true,
     skip: !shouldFetch,
@@ -208,6 +209,33 @@ export function useInventoryData(apiPayload: any, shouldFetch: boolean) {
   const isInitialLoading = shouldFetch && (isLoading || (isFetching && !hasInitiallyLoaded))
   const isRefreshing = shouldFetch && isFetching && hasInitiallyLoaded && currentApiPayload.pageIndex === 1
 
+  // Error message processing
+  const errorMessage = useMemo(() => {
+    if (!isError || !error) return null
+    
+    // Handle different error types
+    if ('status' in error) {
+      switch (error.status) {
+        case 500:
+          return "Server error occurred. Please try again later."
+        case 404:
+          return "Inventory data not found."
+        case 403:
+          return "You don't have permission to access this data."
+        case 401:
+          return "Your session has expired. Please log in again."
+        default:
+          return `Error ${error.status}: Failed to load inventory data.`
+      }
+    }
+    
+    if ('message' in error) {
+      return error.message
+    }
+    
+    return "Failed to load inventory data. Please try again."
+  }, [isError, error])
+
   return {
     items: paginationState.accumulatedData,
     totalCount: inventoryData?.totalCount || 0,
@@ -217,6 +245,7 @@ export function useInventoryData(apiPayload: any, shouldFetch: boolean) {
     isLoadingMore,
     hasInitiallyLoaded,
     isError,
+    errorMessage,
     fetchNextPage,
     resetPagination,
     refetch,

@@ -2,27 +2,78 @@
 
 import { Sidebar } from "@/components/layout/sidebar"
 import { PageHeader } from "@/features/shared/components/page-header"
-import { useOrdersPageSimple } from "../hooks/useOrdersPageSimple"
+import { OrdersFilter } from "./orders-filter"
+import { AdvancedTable, GlobalLoader, GlobalErrorFallback } from "@/components/shared"
+import { FilterSheet } from "./filter-sheet"
+import { ColumnCustomizationSheet } from "./column-customization-sheet"
+import { useOrdersPage } from "../hooks/useOrdersPage"
 
 export function OrdersPageContent() {
-  // Use the custom hook for all logic and data
+  // Use the consolidated custom hook
   const {
     // UI State
     sidebarOpen,
+    activeSheet,
     
-    // Data
+    // Data State
     orders,
     totalCount,
-    isLoading,
-    error,
+    hasNextPage,
+    isTableLoading,
+    tableData,
+    errorMessage,
+    emptyMessage,
+    
+    // Filter State
+    filter,
+    dateRange,
+    searchQueryState,
+    currentTab,
+    filterHydrated,
+    tabHydrated,
+    isBrowser,
+    
+    // Table Configuration
+    columns,
+    tableSorting,
+    stickyColumns,
+    shouldVirtualize,
+    virtualizedOrders,
+    
+    // Customer Data
+    customers,
+    isLoadingCustomers,
     
     // Computed
     breadcrumbItems,
+    memoizedInitialFilters,
     
     // Handlers
+    handleTabChange,
+    handleSearchChange,
+    handleDateRangeChange,
+    handleFilterUpdate,
+    handleSortChange,
+    handleRowClick,
+    fetchNextPage,
     handleSidebarToggle,
     handleSidebarClose,
-  } = useOrdersPageSimple()
+    handleOpenFilterSheet,
+    handleOpenColumnSheet,
+    handleCloseSheet,
+    handleFiltersApply,
+    clearErrors,
+    
+    // Loading States
+    loadingStates,
+  } = useOrdersPage()
+
+  // Orders page content
+
+  // Don't render table until hydrated (prevents SSR mismatches)
+  if (!isBrowser || !filterHydrated || !tabHydrated) {
+    return <GlobalLoader variant="fullscreen" message="Initializing orders..." />
+  }
 
   return (
     <div className="h-screen flex flex-col bg-dashboard-background">
@@ -30,64 +81,78 @@ export function OrdersPageContent() {
 
       {/* Fixed Page Header Section */}
       <div className="flex-shrink-0 px-4">
-        <PageHeader 
-          title="Orders" 
-          breadcrumbItems={breadcrumbItems} 
-          onMenuClick={handleSidebarToggle} 
+        <PageHeader title="Orders" breadcrumbItems={breadcrumbItems} onMenuClick={handleSidebarToggle} />
+      </div>
+
+      {/* Fixed Filter Section */}
+      <div className="flex-shrink-0 px-4 mb-4">
+        <OrdersFilter
+          activeTab={currentTab}
+          onTabChange={handleTabChange}
+          searchQuery={searchQueryState}
+          onSearchChange={handleSearchChange}
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+          filter={filter}
+          onFilterChange={handleFilterUpdate}
+          onAdvancedFiltersClick={handleOpenFilterSheet}
+          onColumnCustomizationClick={handleOpenColumnSheet}
         />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 px-4 pb-4 min-h-0">
-        <div className="bg-white rounded-lg border h-full p-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-gray-500">Loading orders...</div>
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-red-500">Error loading orders</div>
-            </div>
-          ) : (
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Orders ({totalCount})</h2>
-              <div className="space-y-2">
-                {orders.map((order) => (
-                  <div key={order.orderId} className="p-3 border rounded-md hover:bg-gray-50 cursor-pointer">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-medium text-blue-600">{order.transactionId}</span>
-                        <span className="ml-3 text-gray-600">{order.customer}</span>
-                        <span className="ml-3 text-sm text-gray-500">{order.orderType}</span>
-                      </div>
-                      <div className="text-sm">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          order.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                          order.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                          order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {order.status}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      <span>Ref: {order.referenceId}</span>
-                      <span className="ml-4">Channel: {order.channel}</span>
-                      <span className="ml-4">Date: {order.appointmentDate}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {orders.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  No orders found
-                </div>
-              )}
-            </div>
-          )}
+      {/* Error Display */}
+      {errorMessage && (
+        <div className="flex-shrink-0 px-4 mb-2">
+          <GlobalErrorFallback 
+            variant="inline"
+            error={errorMessage}
+            onRetry={clearErrors}
+            showRetry={true}
+          />
+        </div>
+      )}
+
+      {/* Flexible Table Section - Takes remaining space with proper height constraints */}
+      <div className="flex-1 px-4 pb-4 min-h-0 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full">
+          <AdvancedTable.Root
+            data={shouldVirtualize ? virtualizedOrders : tableData}
+            columns={columns}
+            onRowClick={handleRowClick}
+            stickyColumns={{ left: ['transactionId'], right: [] }}
+            isLoading={isTableLoading}
+            emptyMessage={emptyMessage}
+            sorting={tableSorting}
+            onSortingChange={handleSortChange}
+            manualSorting={true}
+          >
+            <AdvancedTable.Container
+              hasNextPage={hasNextPage}
+              fetchNextPage={fetchNextPage}
+              isFetchingNextPage={loadingStates.loadingMore}
+            >
+              <AdvancedTable.Table>
+                <AdvancedTable.Header />
+                <AdvancedTable.Body />
+              </AdvancedTable.Table>
+            </AdvancedTable.Container>
+          </AdvancedTable.Root>
         </div>
       </div>
+
+      {/* Enhanced Filter Sheet - Only render when active */}
+      {activeSheet === "filter" && (
+        <FilterSheet
+          isOpen={true}
+          onClose={handleCloseSheet}
+          onFiltersApply={handleFiltersApply}
+          initialFilters={memoizedInitialFilters}
+          customers={customers}
+          isLoadingCustomers={isLoadingCustomers}
+        />
+      )}
+
+      {/* Column customization disabled - sheet not needed */}
     </div>
   )
 }

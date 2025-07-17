@@ -31,8 +31,8 @@ import { useVirtualScroll } from "./useVirtualScrollSimple"
 import { useCustomerCache } from "@/hooks/useCustomerCache"
 import type { AdvancedTableColumn } from "@/components/shared/advanced-table"
 
-// Define sheet types for better type safety
-type SheetType = "filter" | "column" | null
+// Define sheet types for better type safety (column sheet disabled)
+type SheetType = "filter" | null
 
 export function useOrdersPage() {
   const searchParams = useSearchParams()
@@ -48,6 +48,7 @@ export function useOrdersPage() {
   const [activeSheet, setActiveSheet] = useState<SheetType>(null)
 
   // Enhanced hooks for full feature integration
+  // Column customization is disabled to show only base columns
   const columnCustomization = useColumnCustomization("orders")
   const advancedFilters = useAdvancedFilters()
   const enhancedBulkActions = useEnhancedBulkActions<Order>()
@@ -121,7 +122,7 @@ export function useOrdersPage() {
     return [{ id: sortColumn, desc: sortDirection === "desc" }]
   }, [filter.sortColumn, filter.sortDirection])
 
-  // Enhanced column customization
+  // Column customization (DISABLED - only base columns shown)
   const {
     visibleColumns,
     stickyColumns,
@@ -195,7 +196,7 @@ export function useOrdersPage() {
     skip: !isBrowser || !filterHydrated || !tabHydrated,
   })
 
-  // Memoized table columns with customization support
+  // Memoized table columns - DISABLED customization, always show base columns
   const columns: AdvancedTableColumn<Order>[] = useMemo(() => {
     const baseColumns = [
       {
@@ -261,20 +262,9 @@ export function useOrdersPage() {
       },
     ]
 
-    if (visibleColumns.length > 0) {
-      return baseColumns
-        .filter((col) => visibleColumns.some((visibleCol) => visibleCol.id === col.key))
-        .map((col) => {
-          const customCol = visibleColumns.find((visibleCol) => visibleCol.id === col.key)
-          return {
-            ...col,
-            width: customCol?.width || col.minWidth,
-          }
-        })
-    }
-
+    // Always return base columns (column customization disabled)
     return baseColumns
-  }, [visibleColumns])
+  }, []) // Remove dependencies to prevent re-renders
 
   // Process API response when data changes
   useEffect(() => {
@@ -390,7 +380,8 @@ export function useOrdersPage() {
   const handleOpenColumnSheet = useCallback((e?: React.MouseEvent) => {
     e?.preventDefault()
     e?.stopPropagation()
-    setActiveSheet("column")
+    // Column customization disabled - do nothing
+    console.log("Column customization is disabled")
   }, [])
 
   const handleCloseSheet = useCallback(() => {
@@ -471,7 +462,7 @@ export function useOrdersPage() {
     // Table Configuration
     columns,
     tableSorting,
-    stickyColumns,
+    stickyColumns: { left: ['transactionId'], right: [] }, // Pin Transaction ID to left
     shouldVirtualize,
     virtualizedOrders,
     
@@ -481,10 +472,10 @@ export function useOrdersPage() {
     isBulkLoading,
     bulkActions,
     
-    // Column Customization
-    visibleColumns,
-    isColumnLoading,
-    hasUnsavedColumns,
+    // Column Customization (DISABLED)
+    visibleColumns: [], // Disabled
+    isColumnLoading: false, // Disabled
+    hasUnsavedColumns: false, // Disabled
     
     // Customer Data
     customers,
@@ -511,13 +502,13 @@ export function useOrdersPage() {
     handleFiltersApply,
     clearErrors,
     
-    // Column Customization Methods
-    toggleColumn,
-    reorderColumns,
-    updateColumnWidth,
-    pinColumn,
-    resetColumns,
-    saveColumns,
+    // Column Customization Methods (DISABLED)
+    toggleColumn: () => console.log("Column customization disabled"),
+    reorderColumns: () => console.log("Column customization disabled"),
+    updateColumnWidth: () => console.log("Column customization disabled"),
+    pinColumn: () => console.log("Column customization disabled"),
+    resetColumns: () => console.log("Column customization disabled"),
+    saveColumns: () => console.log("Column customization disabled"),
     
     // Loading States
     loadingStates,

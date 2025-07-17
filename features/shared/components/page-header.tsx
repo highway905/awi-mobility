@@ -2,10 +2,8 @@
 
 import type React from "react"
 
-import { ChevronRight, Search } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Select } from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
 
 interface BreadcrumbItem {
   label: string
@@ -15,28 +13,14 @@ interface BreadcrumbItem {
 interface PageHeaderProps {
   title: string | React.ReactNode
   breadcrumbItems: BreadcrumbItem[]
-  filterValue?: string
-  filterOptions?: { value: string; label: string }[]
-  onFilterChange?: (value: string) => void
   onMenuClick?: () => void
-  showSearch?: boolean
-  searchValue?: string
-  searchPlaceholder?: string
-  onSearchChange?: (value: string) => void
   actions?: React.ReactNode
 }
 
 export function PageHeader({
   title,
   breadcrumbItems,
-  filterValue,
-  filterOptions = [],
-  onFilterChange,
   onMenuClick,
-  showSearch = false,
-  searchValue = "",
-  searchPlaceholder = "Search...",
-  onSearchChange,
   actions,
 }: PageHeaderProps) {
   return (

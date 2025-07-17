@@ -1,8 +1,6 @@
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { PATH_DASHBOARD } from '@/routes/paths';
-// components
-import { getUserCred } from '@/utils/helper';
+import { getUserCred, resetUserCred, isValidUserCredentials } from '@/utils/helper';
 
 // ----------------------------------------------------------------------
 
@@ -11,28 +9,38 @@ type GuestGuardProps = {
 };
 
 export default function GuestGuard({ children }: GuestGuardProps) {
-  const { push } = useRouter();
-
-  const getUserData = getUserCred('userCred');
-  const isAuthenticated = !!getUserData?.token;
+  const router = useRouter();
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => {
+    const checkAuthAndRedirect = () => {
+      const getUserData = getUserCred('userCred');
+      
+      // Validate token and expiry
+      if (getUserData && isValidUserCredentials(getUserData)) {
+        // User is authenticated, redirect to orders
+        router.push('/orders');
+      } else if (getUserData && !isValidUserCredentials(getUserData)) {
+        // Clear invalid/expired credentials
+        resetUserCred();
+      }
+      
       setIsInitialized(true);
-    }, 1000);
-  }, []);
+    };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      push(PATH_DASHBOARD.root);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+    // Use a short delay to ensure localStorage is accessible
+    const timer = setTimeout(checkAuthAndRedirect, 100);
+    return () => clearTimeout(timer);
+  }, [router]);
 
-  if (isInitialized === isAuthenticated) {
-    return <></>;
+  // Show loading indicator while checking authentication
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-12 h-12 border-4 border-gray-300 border-t-amber-500 rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
-  return <> {children} </>;
+  return <>{children}</>;
 }

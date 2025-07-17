@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { getUserCred } from '@/utils/helper';
+import { getUserCred, resetUserCred, isValidUserCredentials } from '@/utils/helper';
 
 // ----------------------------------------------------------------------
 
@@ -20,7 +20,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     // Check authentication status
     const checkAuth = () => {
       const getUserData = getUserCred('userCred');
-      const authenticated = !!getUserData?.token;
+      
+      // Validate token and expiry
+      const authenticated = getUserData && isValidUserCredentials(getUserData);
       setIsAuthenticated(authenticated);
       
       // Initialize after a short delay
@@ -28,6 +30,10 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       
       // Redirect if not authenticated
       if (!authenticated) {
+        // Clear invalid/expired credentials
+        if (getUserData) {
+          resetUserCred();
+        }
         router.push('/login');
       }
     };

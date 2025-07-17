@@ -19,11 +19,6 @@ import AuthGuard from "@/routes/AuthGuard"
 
 const breadcrumbItems = [{ label: "Home", href: "/" }, { label: "Dashboard" }]
 
-const filterOptions = [
-  { value: "abisec", label: "ABISEC" },
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-]
 const warehouseOptions = [
   { value: "awisec", label: "AWISEC" },
   { value: "warehouse-b", label: "Warehouse B" },
@@ -45,8 +40,6 @@ export default function DashboardPage() {
             <PageHeader
               title="Dashboard"
               breadcrumbItems={breadcrumbItems}
-              filterValue="abisec"
-              filterOptions={filterOptions}
               onMenuClick={() => setSidebarOpen(!sidebarOpen)}
               actions={
                 <div className="w-[214px]">

@@ -66,6 +66,14 @@ export const PATH_DASHBOARD = {
     contactDetails: path(ROOTS_DASHBOARD, '/customer-management/customer-details/contact-details/'),
     createBundle: path(ROOTS_DASHBOARD, '/customer-management/customer-details/create-bundle/'),
   },
+  orders: {
+    root: '/orders',
+    details: (id: string) => `/order-details/${id}`,
+  },
+  orderDetails: {
+    root: '/order-details',
+    byId: (id: string) => `/order-details/${id}`,
+  },
   orderManagement: {
     root: path(ROOTS_DASHBOARD, '/order-management'),
     list: path(ROOTS_DASHBOARD, '/order-management/list'),

@@ -3,10 +3,10 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTable, type DataTableColumn } from "@/features/shared/components/data-table"
-import { Upload, Download, Trash2 } from "lucide-react"
+import { Upload, Download, Trash2, Camera } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { NoData, NoDataIcons } from "./no-data"
+import { GlobalErrorFallback } from "@/components/shared"
+import { SearchWithCamera } from "@/components/ui/search-with-camera"
 
 interface APIAttachment {
   id: string;
@@ -37,10 +37,11 @@ export function AttachmentsTable({ attachments }: AttachmentsTableProps) {
 
   // Create empty state component
   const emptyState = (
-    <NoData 
+    <GlobalErrorFallback 
+      variant="card"
       title="No attachments found"
       description="No documents have been attached to this order yet."
-      icon={<NoDataIcons.attachments />}
+      showRetry={false}
     />
   );
 
@@ -79,20 +80,29 @@ export function AttachmentsTable({ attachments }: AttachmentsTableProps) {
   ]
 
   return (
-    <Card className="h-full flex flex-col p-6">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 p-0 pb-4">
-        <CardTitle className="text-xl font-semibold ">Attachments</CardTitle>
-        <Button size="sm">
-          <Upload className="h-4 w-4 mr-2" /> Upload
-        </Button>
-      </CardHeader>
-      <CardContent className="p-0 overflow-auto">
-        <DataTable 
-          columns={columns} 
-          data={attachmentRows} 
-          emptyState={emptyState}
-        />
-      </CardContent>
-    </Card>
+    <DataTable 
+      columns={columns} 
+      data={attachmentRows} 
+      emptyState={emptyState}
+    />
+  )
+}
+
+// Create the actions component for the TabContentWrapper
+export function AttachmentsActions() {
+  return (
+    <div className="flex items-center gap-2">
+      {/* <SearchWithCamera 
+        placeholder="Search attachments..." 
+        width="240px" 
+        onCamera={() => {
+          // Handle camera/barcode scanning for documents
+          alert("Camera functionality would open here");
+        }}
+      /> */}
+      <Button size="sm">
+        <Upload className="h-4 w-4 mr-2" /> Upload
+      </Button>
+    </div>
   )
 }
