@@ -24,12 +24,6 @@ jobs:
         username: ${{ secrets.ACR_USERNAME }}
         password: ${{ secrets.ACR_PASSWORD }}
     
-    - name: Create .env file
-      run: |
-        echo "HOST_API_KEY=${{ secrets.HOST_API_KEY }}" >> .env
-        echo "HOST_API_FE=${{ secrets.HOST_API_FE }}" >> .env
-        echo "ENCRYPT_PUBLIC_KEY=${{ secrets.ENCRYPT_PUBLIC_KEY }}" >> .env
-        
     - name: Create next.config.js
       run: |
         cat <<'EOF' > next.config.js
