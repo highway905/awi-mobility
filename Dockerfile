@@ -1,61 +1,39 @@
-# Use Node.js LTS Alpine as base image
-FROM node:20-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+# Stage 1: Builder
+FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
-# Install only production dependencies
-RUN npm ci --only=production --ignore-scripts
+# Copy package files and install dependencies
+COPY package*.json ./
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
+# Force install correct SWC binary for Alpine
+RUN npm install @next/swc-linux-x64-musl --save-dev
+RUN npm ci
 
-# Copy package files and install ALL dependencies (including devDependencies for build)
-COPY package.json package-lock.json* ./
-RUN npm ci --ignore-scripts
-
-# Copy source code
+# Copy the rest of the application code
 COPY . .
 
-# Disable Next.js telemetry during build
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Build the application
+# Build the Next.js application
+ENV NODE_ENV=qa
 RUN npm run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Reinstall only production dependencies
+RUN npm ci --omit=dev --ignore-scripts
+
+# Stage 2: Production Image
+FROM node:18-alpine AS production
 WORKDIR /app
 
-ENV NODE_ENV=production
-# Disable Next.js telemetry during runtime
-ENV NEXT_TELEMETRY_DISABLED=1
+# Copy production files from builder
+COPY package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
-# Create a non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Inject environment variables at runtime, NOT during build
+# You'll provide .env at container runtime via Docker secrets or volume mounts
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Copy the built standalone output and static files
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy public assets
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-
-USER nextjs
-
+ENV NODE_ENV=qa
 EXPOSE 3000
 
-ENV PORT=3000
-# Start the application
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
