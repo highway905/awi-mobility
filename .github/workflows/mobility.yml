@@ -27,7 +27,7 @@ jobs:
     # Mobility
     - name: Build and push Mobility
       run: |
-        docker build -f Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:latest .
+        docker build --no-cache -f Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:latest .
         docker push ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:latest
              
     # Setup kubectl and connect to AKS cluster
