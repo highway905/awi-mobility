@@ -32,7 +32,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   return (
     <>
-      <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In to AWI - WMS - demos</h2>
+      <h2 className="text-3xl font-bold text-gray-900 mb-2">Sign In to AWI - WMS</h2>
       <p className="text-gray-600 mb-8">Enter your email below to login to your account</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
