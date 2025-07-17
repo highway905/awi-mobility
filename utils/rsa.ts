@@ -5,7 +5,7 @@ const publicKey = process.env.ENCRYPT_PUBLIC_KEY;
 
 // Encrypts a message with the given public key
 export const encryptedMessage = (message: string) => {
-  // console.log(publicKey)
+  console.log(publicKey)
 
   const publicRsaKey = forge.pki.publicKeyFromPem(publicKey);
 
