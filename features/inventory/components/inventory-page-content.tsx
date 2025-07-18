@@ -287,7 +287,7 @@ export function InventoryPageContent() {
   const handleFiltersChange = useCallback((newFilters: any) => {
     console.log("Applying filters:", newFilters)
     
-    // Separate client-side filters from server-side filters
+    // Extract client-side filters (these will NOT be sent to server)
     const clientSideFilters = {
       warehouse: newFilters.warehouse || "",
       location: newFilters.location || "",
@@ -295,18 +295,19 @@ export function InventoryPageContent() {
       palletId: newFilters.palletId || "",
     }
     
-    // Server-side filters (everything except the client-side ones)
+    // Extract server-side filters (these WILL be sent to server)
     const { warehouse, location, sku, palletId, ...serverFilters } = newFilters
     
-    // Update client filters
+    // Update client filters state
     setClientFilters(clientSideFilters)
     
-    // Update server filters (excluding client-side fields)
+    // Update server filters state (completely separate from client filters)
     setFilter((prev) => ({
       ...prev,
       ...serverFilters,
       pageIndex: 1,
     }))
+    
     setSearchTrigger((prev) => prev + 1)
   }, [])
 
@@ -324,6 +325,14 @@ export function InventoryPageContent() {
       setIsCustomerChanging(true)
       setPreviousCustomer(value)
     }
+
+    // Reset client-side filters when customer changes
+    setClientFilters({
+      warehouse: "",
+      location: "",
+      sku: "",
+      palletId: "",
+    })
 
     // Update both filter states
     setFilters((prev) => ({
@@ -973,6 +982,7 @@ export function InventoryPageContent() {
         columns={columns}
         showCustomerColumns={showCustomerColumns}
         currentFilters={{...filter, ...clientFilters}}
+        inventoryItems={filteredInventoryItems}
       />
     </div>
   )

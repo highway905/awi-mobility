@@ -45,6 +45,7 @@ interface InventoryFilterSheetProps {
   columns: AdvancedTableColumn<InventoryItem>[]
   showCustomerColumns: boolean
   currentFilters?: Partial<FilterState>
+  inventoryItems?: InventoryItem[]
 }
 
 export const InventoryFilterSheet = memo(function InventoryFilterSheet({
@@ -54,6 +55,7 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
   columns,
   showCustomerColumns,
   currentFilters = {},
+  inventoryItems = [],
 }: InventoryFilterSheetProps) {
   const [filters, setFilters] = useState<FilterState>({
     customer: currentFilters.customer || "",
@@ -105,36 +107,44 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
   }, [])
 
   const handleApplyFilters = useCallback(() => {
-    // Convert filters to API format, only include non-empty values
-    const apiFilters: any = {}
-    
-    // Client-side filters (these will be handled on the frontend)
-    if (filters.sku) apiFilters.sku = filters.sku
-    if (filters.warehouse) apiFilters.warehouse = filters.warehouse
-    if (filters.location) apiFilters.location = filters.location
-    if (filters.palletId) apiFilters.palletId = filters.palletId
-    
-    // Server-side filters (these will be sent to API)
-    if (filters.customer) apiFilters.customerId = filters.customer
-    
-    // Add numeric range filters (server-side)
-    if (filters.inboundMin) apiFilters.inboundMin = parseInt(filters.inboundMin)
-    if (filters.inboundMax) apiFilters.inboundMax = parseInt(filters.inboundMax)
-    if (filters.outboundMin) apiFilters.outboundMin = parseInt(filters.outboundMin)
-    if (filters.outboundMax) apiFilters.outboundMax = parseInt(filters.outboundMax)
-    if (filters.adjustmentMin) apiFilters.adjustmentMin = parseInt(filters.adjustmentMin)
-    if (filters.adjustmentMax) apiFilters.adjustmentMax = parseInt(filters.adjustmentMax)
-    if (filters.onHandMin) apiFilters.onHandMin = parseInt(filters.onHandMin)
-    if (filters.onHandMax) apiFilters.onHandMax = parseInt(filters.onHandMax)
-    
-    if (showCustomerColumns) {
-      if (filters.availableMin) apiFilters.availableMin = parseInt(filters.availableMin)
-      if (filters.availableMax) apiFilters.availableMax = parseInt(filters.availableMax)
-      if (filters.onHoldMin) apiFilters.onHoldMin = parseInt(filters.onHoldMin)
-      if (filters.onHoldMax) apiFilters.onHoldMax = parseInt(filters.onHoldMax)
+    // Create separate objects for client-side and server-side filters
+    const clientSideFilters = {
+      warehouse: filters.warehouse,
+      location: filters.location,
+      sku: filters.sku,
+      palletId: filters.palletId,
     }
     
-    onFiltersChange(apiFilters)
+    const serverSideFilters: any = {}
+    
+    // Server-side filters (sent to API)
+    if (filters.customer) serverSideFilters.customerId = filters.customer
+    
+    // Add numeric range filters (server-side)
+    if (filters.inboundMin) serverSideFilters.inboundMin = parseInt(filters.inboundMin)
+    if (filters.inboundMax) serverSideFilters.inboundMax = parseInt(filters.inboundMax)
+    if (filters.outboundMin) serverSideFilters.outboundMin = parseInt(filters.outboundMin)
+    if (filters.outboundMax) serverSideFilters.outboundMax = parseInt(filters.outboundMax)
+    if (filters.adjustmentMin) serverSideFilters.adjustmentMin = parseInt(filters.adjustmentMin)
+    if (filters.adjustmentMax) serverSideFilters.adjustmentMax = parseInt(filters.adjustmentMax)
+    if (filters.onHandMin) serverSideFilters.onHandMin = parseInt(filters.onHandMin)
+    if (filters.onHandMax) serverSideFilters.onHandMax = parseInt(filters.onHandMax)
+    
+    if (showCustomerColumns) {
+      if (filters.availableMin) serverSideFilters.availableMin = parseInt(filters.availableMin)
+      if (filters.availableMax) serverSideFilters.availableMax = parseInt(filters.availableMax)
+      if (filters.onHoldMin) serverSideFilters.onHoldMin = parseInt(filters.onHoldMin)
+      if (filters.onHoldMax) serverSideFilters.onHoldMax = parseInt(filters.onHoldMax)
+    }
+    
+    // Combine both client-side and server-side filters for the callback
+    // The main component will separate them again
+    const combinedFilters = {
+      ...serverSideFilters,
+      ...clientSideFilters
+    }
+    
+    onFiltersChange(combinedFilters)
     onOpenChange(false)
   }, [filters, showCustomerColumns, onFiltersChange, onOpenChange])
 
@@ -159,8 +169,33 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
       onHoldMax: "",
     }
     setFilters(resetFilters)
-    onFiltersChange({}) // Send empty object to clear all filters
-  }, [onFiltersChange])
+    
+    // Send combined reset values (both client-side and server-side)
+    onFiltersChange({
+      // Server-side resets
+      customerId: "",
+      inboundMin: undefined,
+      inboundMax: undefined,
+      outboundMin: undefined,
+      outboundMax: undefined,
+      adjustmentMin: undefined,
+      adjustmentMax: undefined,
+      onHandMin: undefined,
+      onHandMax: undefined,
+      availableMin: undefined,
+      availableMax: undefined,
+      onHoldMin: undefined,
+      onHoldMax: undefined,
+      // Client-side resets
+      warehouse: "",
+      location: "",
+      sku: "",
+      palletId: "",
+    })
+    
+    // Close the sheet after resetting
+    onOpenChange(false)
+  }, [onFiltersChange, onOpenChange])
 
   // Check which columns are available - memoized to prevent re-computation
   // const { hasWarehouseColumn, hasLocationColumn, hasPalletIdColumn } = useMemo(() => ({
@@ -219,14 +254,42 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
     return apiLocations
   }
 
+  // Get unique locations from current inventory items for the dropdown
+  const uniqueLocations = useMemo(() => {
+    if (!inventoryItems || inventoryItems.length === 0) return []
+    
+    const locationSet = new Set<string>()
+    inventoryItems.forEach(item => {
+      if (item.location && item.location.trim() !== '') {
+        locationSet.add(item.location.trim())
+      }
+    })
+    
+    return Array.from(locationSet).sort()
+  }, [inventoryItems])
+
+  // Get unique warehouses from current inventory items for the dropdown
+  const uniqueWarehouses = useMemo(() => {
+    if (!inventoryItems || inventoryItems.length === 0) return []
+    
+    const warehouseSet = new Set<string>()
+    inventoryItems.forEach(item => {
+      if (item.warehouse && item.warehouse.trim() !== '') {
+        warehouseSet.add(item.warehouse.trim())
+      }
+    })
+    
+    return Array.from(warehouseSet).sort()
+  }, [inventoryItems])
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-96 flex flex-col">
         <SheetHeader>
           <div className="flex items-center justify-between">
             <div>
-              <SheetTitle>Advanced Filters</SheetTitle>
-              <SheetDescription>Filter inventory by specific criteria</SheetDescription>
+              <SheetTitle>Filters</SheetTitle>
+              {/* <SheetDescription>Filter inventory by specific criteria</SheetDescription> */}
             </div>
             <Button
               variant="ghost"
@@ -239,7 +302,7 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto py-6">
+        <div className="flex-1 border-t bg-white overflow-y-auto py-6">
           <div className="space-y-6">
             {/* SKU Filter */}
             <div className="space-y-2">
@@ -296,11 +359,25 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
                 <Package className="h-4 w-4" />
                 Warehouse
               </Label>
-              <Input
-                placeholder="Enter warehouse name to filter"
-                value={filters.warehouse}
-                onChange={(e) => handleFilterChange("warehouse", e.target.value)}
-              />
+              <Select
+                value={filters.warehouse || "all"}
+                onValueChange={(value) => {
+                  const newWarehouse = value === "all" ? "" : value
+                  handleFilterChange("warehouse", newWarehouse)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select warehouse" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Warehouses</SelectItem>
+                  {uniqueWarehouses.map((warehouse) => (
+                    <SelectItem key={warehouse} value={warehouse}>
+                      {warehouse}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
 
@@ -310,13 +387,26 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
                 <MapPin className="h-4 w-4" />
                 Location
               </Label>
-              <Input
-                placeholder="Enter location name to filter"
-                value={filters.location}
-                onChange={(e) => handleFilterChange("location", e.target.value)}
-              />
+              <Select
+                value={filters.location || "all"}
+                onValueChange={(value) => {
+                  const newLocation = value === "all" ? "" : value
+                  handleFilterChange("location", newLocation)
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {uniqueLocations.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            
 
             {/* Pallet ID Filter */}
             

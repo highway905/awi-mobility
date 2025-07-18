@@ -22,10 +22,10 @@ interface SidebarProps {
 
 const navigationItems = [
   { icon: "LayoutDashboard", label: "Dashboard", href: "/dashboard", active: false },
-  { icon: "Package", label: "Orders", href: "/orders", active: false },
-  { icon: "CheckSquare", label: "Tasks", href: "/tasks", active: false },
+  { icon: "CheckSquare", label: "Orders", href: "/orders", active: false },
+  { icon: "Package", label: "Tasks", href: "/tasks", active: false },
   { icon: "Archive", label: "Inventory", href: "/inventory", active: false },
-  { icon: "Truck", label: "Shipping", href: "/shipping", active: false },
+  // { icon: "Truck", label: "Shipping", href: "/shipping", active: false },
 ]
 
 const notificationItems = [
@@ -41,24 +41,7 @@ const notificationItems = [
     time: "5m ago",
     isNew: false
   },
-  {
-    id: "O-0953621",
-    message: "Putaway task has exceeded the threshold limit.",
-    time: "04/20/2025 12:49 PM",
-    isNew: false
-  },
-  {
-    id: "O-0953621",
-    message: "Labelling task is approaching its deadline.",
-    time: "04/20/2025 11:16 AM",
-    isNew: false
-  },
-  {
-    id: "",
-    message: "4 tasks are currently unassigned and due today.",
-    time: "04/20/2025 11:04 AM",
-    isNew: false
-  }
+
 ]
 
 const getIcon = (iconName: string) => {
@@ -179,9 +162,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Navigation Icons */}
         <nav className="flex-1 py-4">
-          <ul className="space-y-2 px-3">
+          <ul className="space-y-2 px-3 flex flex-col gap-3">
             {navigationItems.map((item, index) => (
-              <li key={index}>
+              <li key={index} >
                 <Link
                   href={item.href}
                   className={cn(
@@ -264,10 +247,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <div className="text-sm text-gray-500">{userInfo.email}</div>
                   </div>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                {/* <DropdownMenuSeparator /> */}
+                {/* <DropdownMenuItem className="cursor-pointer">
                   <span>Change Password</span>
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem 
                   className="cursor-pointer" 
                   onClick={handleLogout}
