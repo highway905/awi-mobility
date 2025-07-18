@@ -108,13 +108,16 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
     // Convert filters to API format, only include non-empty values
     const apiFilters: any = {}
     
-    if (filters.customer) apiFilters.customerId = filters.customer
+    // Client-side filters (these will be handled on the frontend)
     if (filters.sku) apiFilters.sku = filters.sku
-    if (filters.warehouse) apiFilters.warehouseId = filters.warehouse
-    if (filters.location) apiFilters.locationId = filters.location
+    if (filters.warehouse) apiFilters.warehouse = filters.warehouse
+    if (filters.location) apiFilters.location = filters.location
     if (filters.palletId) apiFilters.palletId = filters.palletId
     
-    // Add numeric range filters
+    // Server-side filters (these will be sent to API)
+    if (filters.customer) apiFilters.customerId = filters.customer
+    
+    // Add numeric range filters (server-side)
     if (filters.inboundMin) apiFilters.inboundMin = parseInt(filters.inboundMin)
     if (filters.inboundMax) apiFilters.inboundMax = parseInt(filters.inboundMax)
     if (filters.outboundMin) apiFilters.outboundMin = parseInt(filters.outboundMin)
@@ -287,76 +290,32 @@ export const InventoryFilterSheet = memo(function InventoryFilterSheet({
               )}
             </div>
 
-            {/* Warehouse Filter - only show if warehouse column exists */}
-          
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  Warehouse
-                </Label>
-                <Select
-                  value={filters.warehouse || "all"}
-                  onValueChange={(value) => {
-                    const newWarehouse = value === "all" ? "" : value
-                    handleFilterChange("warehouse", newWarehouse)
-                    // Clear location filter when warehouse changes
-                    if (newWarehouse !== filters.warehouse) {
-                      handleFilterChange("location", "")
-                      // Note: Cache will automatically handle different warehouse IDs due to cache key generation
-                    }
-                  }}
-                  disabled={isLoadingWarehouses}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={isLoadingWarehouses ? "Loading warehouses..." : "Select warehouse"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Warehouses</SelectItem>
-                    {apiWarehouses.map((warehouse) => (
-                      <SelectItem key={warehouse.id} value={warehouse.id}>
-                        {warehouse.displayName || warehouse.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {warehousesError && (
-                  <p className="text-xs text-red-600">Failed to load warehouses</p>
-                )}
-              </div>
+            {/* Warehouse Filter */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Warehouse
+              </Label>
+              <Input
+                placeholder="Enter warehouse name to filter"
+                value={filters.warehouse}
+                onChange={(e) => handleFilterChange("warehouse", e.target.value)}
+              />
+            </div>
             
 
             {/* Location Filter */}
-
-              {/* <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Location
-                </Label>
-                <Select
-                  value={filters.location || "all"}
-                  onValueChange={(value) => handleFilterChange("location", value === "all" ? "" : value)}
-                  disabled={isLoadingLocations || (isLoadingWarehouses && !!filters.warehouse)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={isLoadingLocations ? "Loading locations..." : "Select location"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Locations</SelectItem>
-                    {getFilteredLocations().map((location) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.locationName}
-                        {location.warehouseName && ` (${location.warehouseName})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {locationsError && (
-                  <p className="text-xs text-red-600">Failed to load locations</p>
-                )}
-                {filters.warehouse && getFilteredLocations().length === 0 && !isLoadingLocations && (
-                  <p className="text-xs text-gray-500">No locations found for selected warehouse</p>
-                )}
-              </div> */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Location
+              </Label>
+              <Input
+                placeholder="Enter location name to filter"
+                value={filters.location}
+                onChange={(e) => handleFilterChange("location", e.target.value)}
+              />
+            </div>
             
 
             {/* Pallet ID Filter */}
