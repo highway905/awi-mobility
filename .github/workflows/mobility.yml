@@ -27,8 +27,8 @@ jobs:
     # Mobility
     - name: Build and push Mobility
       run: |
-        docker build -f Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:${{ github.sha }} .
-        docker push ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:${{ github.sha }}
+        docker build --no-cache -f Dockerfile -t ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:latest .
+        docker push ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:latest
              
     # Setup kubectl and connect to AKS cluster
     - name: Setup kubectl
@@ -45,7 +45,7 @@ jobs:
       env:
         DEPLOYMENT_NAME: h905awi-qa-mobility
         CONTAINER_NAME: h905awi-qa-mobility
-        IMAGE_URI: ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:${{ github.sha }}
+        IMAGE_URI: ${{ secrets.ACR_LOGIN_SERVER }}/h905awi-qa-mobility:latest
       run: |
         kubectl set image deployment/$DEPLOYMENT_NAME $CONTAINER_NAME=$IMAGE_URI
         kubectl rollout status deployment/$DEPLOYMENT_NAME
