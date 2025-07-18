@@ -130,6 +130,14 @@ export function InventoryPageContent() {
     return []
   })
 
+  // Client-side filters state (separate from server-side filters)
+  const [clientFilters, setClientFilters] = useState({
+    warehouse: "",
+    location: "",
+    sku: "",
+    palletId: "",
+  })
+
   // Use cached customer data - keep this enabled for the main customer dropdown
   const {
     customers: customerList,
@@ -159,6 +167,7 @@ export function InventoryPageContent() {
     if (filters.search !== filter.searchKey) {
       setFilter((prev) => ({
         ...prev,
+        warehouseId:"",
         searchKey: filters.search,
         pageIndex: 1,
       }))
@@ -277,9 +286,25 @@ export function InventoryPageContent() {
 
   const handleFiltersChange = useCallback((newFilters: any) => {
     console.log("Applying filters:", newFilters)
+    
+    // Separate client-side filters from server-side filters
+    const clientSideFilters = {
+      warehouse: newFilters.warehouse || "",
+      location: newFilters.location || "",
+      sku: newFilters.sku || "",
+      palletId: newFilters.palletId || "",
+    }
+    
+    // Server-side filters (everything except the client-side ones)
+    const { warehouse, location, sku, palletId, ...serverFilters } = newFilters
+    
+    // Update client filters
+    setClientFilters(clientSideFilters)
+    
+    // Update server filters (excluding client-side fields)
     setFilter((prev) => ({
       ...prev,
-      ...newFilters,
+      ...serverFilters,
       pageIndex: 1,
     }))
     setSearchTrigger((prev) => prev + 1)
@@ -321,6 +346,7 @@ export function InventoryPageContent() {
     setSorting([])
     setFilter((prev) => ({
       ...prev,
+      warehouseId: "",
       sortColumn: "",
       sortDirection: "",
     }))
@@ -663,6 +689,42 @@ export function InventoryPageContent() {
     [showCustomerColumns, push],
   )
 
+  // Client-side filtering function
+  const applyClientFilters = useCallback((items: InventoryItem[]): InventoryItem[] => {
+    return items.filter(item => {
+      // Warehouse filter
+      if (clientFilters.warehouse && 
+          !item.warehouse?.toLowerCase().includes(clientFilters.warehouse.toLowerCase())) {
+        return false
+      }
+      
+      // Location filter
+      if (clientFilters.location && 
+          !item.location?.toLowerCase().includes(clientFilters.location.toLowerCase())) {
+        return false
+      }
+      
+      // SKU filter
+      if (clientFilters.sku && 
+          !item.sku?.toLowerCase().includes(clientFilters.sku.toLowerCase())) {
+        return false
+      }
+      
+      // Pallet ID filter
+      if (clientFilters.palletId && 
+          !item.palletId?.toLowerCase().includes(clientFilters.palletId.toLowerCase())) {
+        return false
+      }
+      
+      return true
+    })
+  }, [clientFilters])
+
+  // Apply client-side filtering to inventory items
+  const filteredInventoryItems = useMemo(() => {
+    return applyClientFilters(inventoryItems)
+  }, [inventoryItems, applyClientFilters])
+
   // Helper function to format numbers - 2 decimal places for decimals, no decimals for integers
   const formatFooterNumber = (value: number) => {
     if (value === 0) return "0"
@@ -670,26 +732,26 @@ export function InventoryPageContent() {
     return value.toFixed(2)
   }
 
-  // Calculate footer data
+  // Calculate footer data using filtered inventory items
   const footerData = useMemo(
     () => {
-      const weightImperialTotal = inventoryItems.reduce((sum, item) => sum + (item.weightImperial || 0), 0)
-      const weightMetricTotal = inventoryItems.reduce((sum, item) => sum + (item.weightMetric || 0), 0)
-      const volumeCubicInchesTotal = inventoryItems.reduce((sum, item) => sum + (item.volumeCubicInches || 0), 0)
-      const volumeCubicFeetTotal = inventoryItems.reduce((sum, item) => sum + (item.volumeCubicFeet || 0), 0)
+      const weightImperialTotal = filteredInventoryItems.reduce((sum, item) => sum + (item.weightImperial || 0), 0)
+      const weightMetricTotal = filteredInventoryItems.reduce((sum, item) => sum + (item.weightMetric || 0), 0)
+      const volumeCubicInchesTotal = filteredInventoryItems.reduce((sum, item) => sum + (item.volumeCubicInches || 0), 0)
+      const volumeCubicFeetTotal = filteredInventoryItems.reduce((sum, item) => sum + (item.volumeCubicFeet || 0), 0)
 
       return {
-        sku: `Total: ${inventoryItems.length}`,
+        sku: `Total: ${filteredInventoryItems.length}`,
         warehouse: "",
         location: "",
         palletId: "",
-        inbound: inventoryItems.reduce((sum, item) => sum + item.inbound, 0),
-        outbound: inventoryItems.reduce((sum, item) => sum + item.outbound, 0),
-        adjustment: inventoryItems.reduce((sum, item) => sum + item.adjustment, 0),
-        onHand: inventoryItems.reduce((sum, item) => sum + item.onHand, 0),
-        available: inventoryItems.reduce((sum, item) => sum + (item.available || 0), 0),
-        onHold: inventoryItems.reduce((sum, item) => sum + (item.onHold || 0), 0),
-        reserved: inventoryItems.reduce((sum, item) => sum + (item.reserved || 0), 0),
+        inbound: filteredInventoryItems.reduce((sum, item) => sum + item.inbound, 0),
+        outbound: filteredInventoryItems.reduce((sum, item) => sum + item.outbound, 0),
+        adjustment: filteredInventoryItems.reduce((sum, item) => sum + item.adjustment, 0),
+        onHand: filteredInventoryItems.reduce((sum, item) => sum + item.onHand, 0),
+        available: filteredInventoryItems.reduce((sum, item) => sum + (item.available || 0), 0),
+        onHold: filteredInventoryItems.reduce((sum, item) => sum + (item.onHold || 0), 0),
+        reserved: filteredInventoryItems.reduce((sum, item) => sum + (item.reserved || 0), 0),
         description: "",
         universalProductCode: "",
         lotNumber: "",
@@ -706,9 +768,10 @@ export function InventoryPageContent() {
         actions: "",
       }
     },
-    [inventoryItems, totalCount],
+    [filteredInventoryItems, totalCount],
   )
 
+  console.log("Filtered Inventory Items: {filteredInventoryItems}", filteredInventoryItems)
   return (
     <div className="h-screen flex flex-col bg-dashboard-background">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -855,7 +918,7 @@ export function InventoryPageContent() {
         {showTable ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
             <AdvancedTable.Root
-              data={inventoryItems}
+              data={filteredInventoryItems}
               columns={columns}
               onRowClick={handleRowClick}
               // enableBulkSelection={true}
@@ -909,7 +972,7 @@ export function InventoryPageContent() {
         onFiltersChange={handleFiltersChange}
         columns={columns}
         showCustomerColumns={showCustomerColumns}
-        currentFilters={filter}
+        currentFilters={{...filter, ...clientFilters}}
       />
     </div>
   )
