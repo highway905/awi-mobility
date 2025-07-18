@@ -6,6 +6,7 @@ import { Search, MoreHorizontal, Loader2, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SearchWithCamera } from "@/components/ui/search-with-camera"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { AdvancedTable, type AdvancedTableColumn } from "@/features/shared/components/advanced-table"
 import { Sidebar } from "@/components/layout/sidebar"
@@ -110,6 +111,8 @@ export function InventoryPageContent() {
   const [columnSheetOpen, setColumnSheetOpen] = useState(false)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isCustomerChanging, setIsCustomerChanging] = useState(false)
+  const [previousCustomer, setPreviousCustomer] = useState<string>("")
 
   // Initialize filter state with sorting
   const [filter, setFilter] = useState<any>(() => {
@@ -127,7 +130,7 @@ export function InventoryPageContent() {
     return []
   })
 
-  // Use cached customer data
+  // Use cached customer data - keep this enabled for the main customer dropdown
   const {
     customers: customerList,
     isLoading: isLoadingCustomers,
@@ -136,7 +139,7 @@ export function InventoryPageContent() {
     isUsingCache,
     refreshCache,
     cacheAge,
-  } = useCustomerCache()
+  } = useCustomerCache(true) // Always enabled for main page functionality
 
   // Sync customer selection after customers are loaded
   useEffect(() => {
@@ -187,6 +190,21 @@ export function InventoryPageContent() {
     }
   }, [filters.customer, filter.customerId])
 
+  // Ensure customer changing state is set when we detect customer change effects
+  useEffect(() => {
+    if (filters.customer !== filter.customerId && filters.customer !== "" && filter.customerId !== "") {
+      setIsCustomerChanging(true)
+    }
+  }, [filters.customer, filter.customerId])
+
+  // Detect customer changes and set loading state
+  useEffect(() => {
+    if (filters.customer !== previousCustomer && filters.customer !== "") {
+      setIsCustomerChanging(true)
+      setPreviousCustomer(filters.customer)
+    }
+  }, [filters.customer, previousCustomer])
+
   // Handle sorting changes
   const handleSortingChange = useCallback((newSorting: SortingState) => {
     console.log("Sorting changed:", newSorting)
@@ -215,13 +233,39 @@ export function InventoryPageContent() {
     totalCount,
     hasNextPage,
     isLoading,
+    isRefreshing,
     isLoadingMore,
+    hasInitiallyLoaded,
     isError,
     errorMessage,
     fetchNextPage,
     resetPagination,
     refetch,
   } = useInventoryData(apiPayload, shouldFetchData)
+
+  // Enhanced loading state logic - show skeleton when customer changes
+  const isTableLoading = useMemo(() => {
+    const loading = shouldFetchData && (
+      isLoading || 
+      isRefreshing || 
+      !hasInitiallyLoaded ||
+      isCustomerChanging ||
+      // Also show loading when customers are being fetched (during customer change)
+      isFetchingCustomers
+    )
+    
+    console.log("Table loading state:", {
+      shouldFetchData,
+      isLoading,
+      isRefreshing,
+      hasInitiallyLoaded,
+      isCustomerChanging,
+      isFetchingCustomers,
+      finalLoading: loading
+    })
+    
+    return loading
+  }, [shouldFetchData, isLoading, isRefreshing, hasInitiallyLoaded, isCustomerChanging, isFetchingCustomers])
 
   const handleRowClick = useCallback(
     (item: InventoryItem) => {
@@ -241,9 +285,20 @@ export function InventoryPageContent() {
     setSearchTrigger((prev) => prev + 1)
   }, [])
 
+  // Add callback for filter button click to prevent re-renders
+  const handleFilterButtonClick = useCallback(() => {
+    setFilterSheetOpen(true)
+  }, [])
+
   // Handle customer selection change
   const handleCustomerChange = (value: string) => {
     console.log("Customer selected:", value)
+
+    // Only set loading state if the customer actually changed
+    if (value !== previousCustomer) {
+      setIsCustomerChanging(true)
+      setPreviousCustomer(value)
+    }
 
     // Update both filter states
     setFilters((prev) => ({
@@ -269,7 +324,20 @@ export function InventoryPageContent() {
       sortColumn: "",
       sortDirection: "",
     }))
+
+    // Trigger search to initiate loading state
+    setSearchTrigger((prev) => prev + 1)
   }
+
+  // Clear customer changing state when data loads
+  useEffect(() => {
+    if (isCustomerChanging && hasInitiallyLoaded && !isLoading && !isRefreshing) {
+      const timer = setTimeout(() => {
+        setIsCustomerChanging(false)
+      }, 100) // Small delay to ensure smooth transition
+      return () => clearTimeout(timer)
+    }
+  }, [isCustomerChanging, hasInitiallyLoaded, isLoading, isRefreshing])
 
   // Save filter to localStorage when it changes
   useEffect(() => {
@@ -324,24 +392,21 @@ export function InventoryPageContent() {
           </div>
         ),
         sortable: true,
-        minWidth: 120,
+        minWidth: 110,
       },
-      ...(showCustomerColumns
-        ? []
-        : [
-            {
-              key: "warehouse" as keyof InventoryItem,
-              header: "Warehouse",
-              render: (value: string) => (
-                <div className="text-gray-900 truncate">
-                  {value}
-                </div>
-              ),
-              sortable: true,
-              minWidth: 100,
-            },
-          ]),
-      {
+
+        {
+          key: "warehouse" as keyof InventoryItem,
+          header: "Warehouse",
+          render: (value: string) => (
+            <div className="text-gray-900 truncate">
+              {value}
+            </div>
+          ),
+          sortable: true,
+          minWidth: 100,
+        },
+        {
         key: "location",
         header: "Location",
         render: (value: string) => (
@@ -407,77 +472,242 @@ export function InventoryPageContent() {
         sortable: true,
         minWidth: 80,
       },
-      ...(showCustomerColumns
-        ? [
-            {
-              key: "available" as keyof InventoryItem,
-              header: "Available",
-              render: (value: number) => (
-                <div className="text-right font-medium">
-                  {value || 0}
-                </div>
-              ),
-              sortable: true,
-              minWidth: 80,
-            },
-            {
-              key: "onHold" as keyof InventoryItem,
-              header: "On Hold",
-              render: (value: number) => (
-                <div className="text-right font-medium">
-                  {value || 0}
-                </div>
-              ),
-              sortable: true,
-              minWidth: 80,
-            },
-          ]
-        : []),
       {
-        key: "actions",
-        header: "",
-        render: (_, item: InventoryItem) => (
-          <div onClick={(e) => e.stopPropagation()}>
-            <ActionsDropdown item={item} />
+        key: "available" as keyof InventoryItem,
+        header: "Available",
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value || 0}
           </div>
         ),
-        sortable: false,
-        minWidth: 50,
+        sortable: true,
+        minWidth: 80,
       },
+      {
+        key: "onHold" as keyof InventoryItem,
+        header: "On Hold",
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value || 0}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 80,
+      },
+      {
+        key: "reserved" as keyof InventoryItem,
+        header: "Reserved",
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value || 0}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 80,
+      },
+      {
+        key: "description",
+        header: "Description",
+        render: (value: string) => (
+          <div className="text-gray-700 truncate">
+            {value || "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 550,
+      },
+      {
+        key: "universalProductCode",
+        header: "Primary UPC",
+        render: (value: string) => (
+          <div className="text-gray-700">
+            {value || "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 150,
+      },
+      {
+        key: "lotNumber",
+        header: "Lot #",
+        render: (value: string) => (
+          <div className="text-gray-700">
+            {value || "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 100,
+      },
+      {
+        key: "expirationDate",
+        header: "Expiration Date",
+        render: (value: string) => (
+          <div className="text-gray-700">
+            {value ? new Date(value).toLocaleDateString() : "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 120,
+      },
+      {
+        key: "serialNumber",
+        header: "Serial #",
+        render: (value: string) => (
+          <div className="text-gray-700">
+            {value || "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 100,
+      },
+      {
+        key: "poNumber",
+        header: "PO #",
+        render: (value: string) => (
+          <div className="text-gray-700">
+            {value || "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 100,
+      },
+      {
+        key: "receivedDate",
+        header: "Received Date",
+        render: (value: string) => (
+          <div className="text-gray-700">
+            {value ? new Date(value).toLocaleDateString() : "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 120,
+      },
+      {
+        key: "referenceId",
+        header: "Reference ID",
+        render: (value: string) => (
+          <div className="text-gray-700 truncate">
+            {value || "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 300,
+      },
+      {
+        key: "weightImperial",
+        header: "Weight (lbs)",
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value ? value.toFixed(2) : "0.00"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 100,
+      },
+      {
+        key: "weightMetric",
+        header: "Weight (kg)",
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value ? value.toFixed(2) : "0.00"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 100,
+      },
+      {
+        key: "volumeCubicInches",
+        header: "Volume (cu in)",
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value ? value.toFixed(2) : "0.00"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 120,
+      },
+      {
+        key: "volumeCubicFeet",
+        header: "Volume (cu ft)",
+        render: (value: number) => (
+          <div className="text-right font-medium">
+            {value ? value.toFixed(2) : "0.00"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 120,
+      },
+      {
+        key: "notes",
+        header: "Notes",
+        render: (value: string) => (
+          <div className="text-gray-700">
+            {value || "-"}
+          </div>
+        ),
+        sortable: true,
+        minWidth: 150,
+      },
+      // {
+      //   key: "actions",
+      //   header: "",
+      //   render: (_, item: InventoryItem) => (
+      //     <div onClick={(e) => e.stopPropagation()}>
+      //       <ActionsDropdown item={item} />
+      //     </div>
+      //   ),
+      //   sortable: false,
+      //   minWidth: 50,
+      // },
     ],
     [showCustomerColumns, push],
   )
 
+  // Helper function to format numbers - 2 decimal places for decimals, no decimals for integers
+  const formatFooterNumber = (value: number) => {
+    if (value === 0) return "0"
+    if (Number.isInteger(value)) return value.toString()
+    return value.toFixed(2)
+  }
+
   // Calculate footer data
   const footerData = useMemo(
-    () => ({
-      sku: `Total: ${totalCount || 0} items`,
-      warehouse: "",
-      location: "",
-      palletId: "",
-      inbound: inventoryItems.reduce((sum, item) => sum + item.inbound, 0),
-      outbound: inventoryItems.reduce((sum, item) => sum + item.outbound, 0),
-      adjustment: inventoryItems.reduce((sum, item) => sum + item.adjustment, 0),
-      onHand: inventoryItems.reduce((sum, item) => sum + item.onHand, 0),
-      available: showCustomerColumns ? inventoryItems.reduce((sum, item) => sum + (item.available || 0), 0) : undefined,
-      onHold: showCustomerColumns ? inventoryItems.reduce((sum, item) => sum + (item.onHold || 0), 0) : undefined,
-      actions: "",
-    }),
-    [inventoryItems, totalCount, showCustomerColumns],
-  )
+    () => {
+      const weightImperialTotal = inventoryItems.reduce((sum, item) => sum + (item.weightImperial || 0), 0)
+      const weightMetricTotal = inventoryItems.reduce((sum, item) => sum + (item.weightMetric || 0), 0)
+      const volumeCubicInchesTotal = inventoryItems.reduce((sum, item) => sum + (item.volumeCubicInches || 0), 0)
+      const volumeCubicFeetTotal = inventoryItems.reduce((sum, item) => sum + (item.volumeCubicFeet || 0), 0)
 
-  // Debug effect to monitor state sync
-  useEffect(() => {
-    console.log("State sync check:", {
-      filtersCustomer: filters.customer,
-      filterCustomerId: filter.customerId,
-      shouldFetchData,
-      customerListLoaded: customerList.length > 0,
-      sorting,
-      sortColumn: filter.sortColumn,
-      sortDirection: filter.sortDirection,
-    })
-  }, [filters.customer, filter.customerId, shouldFetchData, customerList.length, sorting, filter.sortColumn, filter.sortDirection])
+      return {
+        sku: `Total: ${inventoryItems.length}`,
+        warehouse: "",
+        location: "",
+        palletId: "",
+        inbound: inventoryItems.reduce((sum, item) => sum + item.inbound, 0),
+        outbound: inventoryItems.reduce((sum, item) => sum + item.outbound, 0),
+        adjustment: inventoryItems.reduce((sum, item) => sum + item.adjustment, 0),
+        onHand: inventoryItems.reduce((sum, item) => sum + item.onHand, 0),
+        available: inventoryItems.reduce((sum, item) => sum + (item.available || 0), 0),
+        onHold: inventoryItems.reduce((sum, item) => sum + (item.onHold || 0), 0),
+        reserved: inventoryItems.reduce((sum, item) => sum + (item.reserved || 0), 0),
+        description: "",
+        universalProductCode: "",
+        lotNumber: "",
+        expirationDate: "",
+        serialNumber: "",
+        poNumber: "",
+        receivedDate: "",
+        referenceId: "",
+        weightImperial: formatFooterNumber(weightImperialTotal),
+        weightMetric: formatFooterNumber(weightMetricTotal),
+        volumeCubicInches: formatFooterNumber(volumeCubicInchesTotal),
+        volumeCubicFeet: formatFooterNumber(volumeCubicFeetTotal),
+        notes: "",
+        actions: "",
+      }
+    },
+    [inventoryItems, totalCount],
+  )
 
   return (
     <div className="h-screen flex flex-col bg-dashboard-background">
@@ -492,7 +722,7 @@ export function InventoryPageContent() {
           actions={
             <div className="flex items-center gap-3">
               {/* General Search */}
-              <div className="relative">
+              {/* <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="Search inventory..."
@@ -501,19 +731,14 @@ export function InventoryPageContent() {
                   className="pl-10 w-48"
                   disabled={!showTable}
                 />
-              </div>
+              </div> */}
               
-              {/* SKU Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search SKU..."
-                  value={filters.skuSearch}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, skuSearch: e.target.value }))}
-                  className="pl-10 w-40"
-                  disabled={!showTable}
-                />
-              </div>
+              {/* SKU Search with Camera */}
+              <SearchWithCamera
+                placeholder="Search SKU..."
+                onSearch={(value) => setFilters((prev) => ({ ...prev, skuSearch: value }))}
+                className="w-40"
+              />
             </div>
           }
         />
@@ -561,7 +786,7 @@ export function InventoryPageContent() {
             </Select>
 
             {/* Cache status indicator and refresh button */}
-            {isUsingCache && (
+            {/* {isUsingCache && (
               <div className="flex items-center space-x-2">
                 <Button
                   variant="ghost"
@@ -573,10 +798,10 @@ export function InventoryPageContent() {
                   <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
-            )}
+            )} */}
           </div>
 
-          <Button
+          {/* <Button
             variant="outline"
             size="icon"
             className="h-9 w-9 rounded bg-transparent"
@@ -590,14 +815,13 @@ export function InventoryPageContent() {
                 stroke="#0C0A09"
               />
             </svg>
-          </Button>
+          </Button> */}
 
           <Button
             variant="outline"
             size="icon"
             className="h-9 w-9 rounded bg-transparent"
-            onClick={() => setFilterSheetOpen(true)}
-            disabled={!showTable}
+            onClick={handleFilterButtonClick}
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
@@ -627,9 +851,9 @@ export function InventoryPageContent() {
       )}
 
       {/* Flexible Table Section - Takes remaining space with proper height constraints */}
-      <div className="flex-1 px-4 pb-4 min-h-0 overflow-hidden">
+      <div className="flex-1 px-4 pb-2 min-h-0 overflow-hidden">
         {showTable ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
             <AdvancedTable.Root
               data={inventoryItems}
               columns={columns}
@@ -637,26 +861,36 @@ export function InventoryPageContent() {
               // enableBulkSelection={true}
               stickyColumns={{
                 left: ["sku"],
-                right: ["actions"],
+                // right: ["actions"],
               }}
-              isLoading={isLoading}
-              emptyMessage={isLoading ? "Loading inventory..." : errorMessage || "No inventory items found matching your criteria"}
+              isLoading={isTableLoading}
+              emptyMessage={
+                isTableLoading 
+                  ? "Loading inventory..." 
+                  : errorMessage 
+                    ? errorMessage 
+                    : "No inventory items found matching your criteria"
+              }
               // Controlled sorting props
               sorting={sorting}
               onSortingChange={handleSortingChange}
               manualSorting={true}
+              className="h-full"
             >
-              <AdvancedTable.Container
-                hasNextPage={hasNextPage}
-                fetchNextPage={fetchNextPage}
-                isFetchingNextPage={isLoadingMore}
-              >
-                <AdvancedTable.Table>
-                  <AdvancedTable.Header />
-                  <AdvancedTable.Body />
-                  <AdvancedTable.Footer footerData={footerData} />
-                </AdvancedTable.Table>
-              </AdvancedTable.Container>
+              <div className="flex flex-col h-full">
+                <AdvancedTable.Container
+                  hasNextPage={hasNextPage}
+                  fetchNextPage={fetchNextPage}
+                  isFetchingNextPage={isLoadingMore}
+                  className="flex-1 min-h-0"
+                >
+                  <AdvancedTable.Table>
+                    <AdvancedTable.Header />
+                    <AdvancedTable.Body />
+                    <AdvancedTable.Footer footerData={footerData} />
+                  </AdvancedTable.Table>
+                </AdvancedTable.Container>
+              </div>
             </AdvancedTable.Root>
           </div>
         ) : (
@@ -675,6 +909,7 @@ export function InventoryPageContent() {
         onFiltersChange={handleFiltersChange}
         columns={columns}
         showCustomerColumns={showCustomerColumns}
+        currentFilters={filter}
       />
     </div>
   )

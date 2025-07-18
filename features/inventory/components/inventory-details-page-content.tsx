@@ -154,9 +154,9 @@ export function InventoryDetailsPageContent() {
         key: "inbound",
         header: "Inbound",
         render: (value: number) => (
-          <div className="text-right">
-            <span className="font-medium text-green-600">
-              {value > 0 ? `+${value}` : value || "-"}
+          <div className="">
+            <span className="font-medium">
+              {value}
             </span>
           </div>
         ),
@@ -167,9 +167,9 @@ export function InventoryDetailsPageContent() {
         key: "outbound",
         header: "Outbound",
         render: (value: number) => (
-          <div className="text-right">
-            <span className="font-medium text-red-600">
-              {value > 0 ? `-${value}` : value || "-"}
+          <div className="">
+            <span className="font-medium ">
+              {value}
             </span>
           </div>
         ),
@@ -180,13 +180,11 @@ export function InventoryDetailsPageContent() {
         key: "adjustment",
         header: "Adjustment",
         render: (value: number) => (
-          <div className="text-right">
+          <div className="">
             <span
-              className={`font-medium ${
-                value > 0 ? "text-green-600" : value < 0 ? "text-red-600" : "text-gray-500"
-              }`}
+              className={`font-medium`}
             >
-              {value > 0 ? `+${value}` : value || "-"}
+              {value}
             </span>
           </div>
         ),
@@ -211,15 +209,16 @@ export function InventoryDetailsPageContent() {
     }
   }, [transactions])
 
-  // Determine loading states
-  const isTableLoading = isTransactionsLoading && !hasTransactionsLoaded
-  const showEmptyState = hasTransactionsLoaded && transactions.length === 0
+  // Determine loading states - Fixed race condition
+  const isTableLoading = isTransactionsLoading || (!hasTransactionsLoaded && !inventoryError)
+  const showEmptyState = hasTransactionsLoaded && !isTransactionsLoading && transactions.length === 0
+  const isDataLoading = isInitialLoading || isTransactionsLoading || !hasTransactionsLoaded
 
-  // Get appropriate empty message
+  // Get appropriate empty message - Fixed to handle race conditions
   const getEmptyMessage = () => {
-    if (isTableLoading) return "Loading transaction history..."
+    if (isDataLoading || isTransactionsLoading) return "Loading transaction history..."
     if (showEmptyState) return "No transaction history found"
-    return "No transaction history found"
+    return "Loading transaction history..."
   }
 
   // Error handling
@@ -259,7 +258,7 @@ export function InventoryDetailsPageContent() {
     )
   }
 
-  // Show initial loading screen if nothing has loaded yet
+  // Show initial loading screen if nothing has loaded yet - Fixed race condition
   if (isInitialLoading && !hasInventoryLoaded && !hasTransactionsLoaded) {
     return (
       <div className="h-screen flex flex-col bg-dashboard-background">
@@ -289,8 +288,8 @@ export function InventoryDetailsPageContent() {
       </div>
 
       {/* Content - FIXED: Exact same structure as inventory page */}
-      <div className="flex-1 px-4 pb-4 min-h-0">
-        {/* Customer Details Card */}
+      <div className="flex-1 px-4 pb-2 min-h-0">
+        {/* Customer Details Card - Fixed race condition */}
         {isInitialLoading && !hasInventoryLoaded ? (
           <div className="mb-4">
             <DetailsCardSkeleton />
@@ -299,39 +298,53 @@ export function InventoryDetailsPageContent() {
           <div className="mb-4">
             <CustomerDetailsCard details={inventoryDetails} />
           </div>
-        ) : hasInventoryLoaded && !inventoryDetails ? (
+        ) : hasInventoryLoaded && !inventoryDetails && !inventoryError ? (
           <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
             <p className="text-yellow-800">Inventory details not available</p>
           </div>
         ) : null}
 
-        {/* Transaction History Table - FIXED: Proper height constraints */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ height: 'calc(100vh - 280px)' }}>
-          <AdvancedTable.Root
-            data={transactions}
-            columns={columns}
-            onRowClick={handleTransactionClick}
-            enableBulkSelection={true}
-            onBulkAction={handleBulkAction}
-            stickyColumns={{
-              left: ["dateTime"],
-              right: []
-            }}
-            isLoading={isTableLoading}
-            emptyMessage={getEmptyMessage()}
-          >
-            <AdvancedTable.Container
-              hasNextPage={hasNextPage}
-              fetchNextPage={handleFetchNextPage}
-              isFetchingNextPage={isLoadingMore}
+        {/* Transaction History Table - FIXED: Proper height constraints and race condition handling */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 240px)' }}>
+          {/* Show loading state if still fetching initial data */}
+          {isInitialLoading && !hasTransactionsLoaded ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-gray-500 flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                Loading transaction history...
+              </div>
+            </div>
+          ) : (
+            <AdvancedTable.Root
+              data={transactions}
+              columns={columns}
+              onRowClick={handleTransactionClick}
+              enableBulkSelection={true}
+              onBulkAction={handleBulkAction}
+              stickyColumns={{
+                left: [],
+                right: []
+              }}
+              isLoading={isTableLoading}
+              emptyMessage={getEmptyMessage()}
+              className="h-full"
             >
-              <AdvancedTable.Table>
-                <AdvancedTable.Header />
-                <AdvancedTable.Body />
-                <AdvancedTable.Footer footerData={footerData} />
-              </AdvancedTable.Table>
-            </AdvancedTable.Container>
-          </AdvancedTable.Root>
+              <div className="flex flex-col h-full">
+                <AdvancedTable.Container
+                  hasNextPage={hasNextPage}
+                  fetchNextPage={handleFetchNextPage}
+                  isFetchingNextPage={isLoadingMore}
+                  className="flex-1 min-h-0"
+                >
+                  <AdvancedTable.Table>
+                    <AdvancedTable.Header />
+                    <AdvancedTable.Body />
+                  </AdvancedTable.Table>
+                </AdvancedTable.Container>
+                {/* <AdvancedTable.Footer footerData={footerData} /> */}
+              </div>
+            </AdvancedTable.Root>
+          )}
         </div>
       </div>
     </div>

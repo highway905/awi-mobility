@@ -27,6 +27,7 @@ export interface AdvancedTableColumn<T> {
   sortable?: boolean
   minWidth?: number
   sticky?: "left" | "right"
+  align?: "left" | "center" | "right"
 }
 
 interface BulkAction {
@@ -91,16 +92,16 @@ function useAdvancedTable<T>() {
 // Skeleton Row Component
 function SkeletonRow({ columnsCount, enableSelection }: { columnsCount: number; enableSelection: boolean }) {
   return (
-    <tr className="h-14 border-b border-gray-100 bg-white/50 animate-pulse">
+    <tr className="border-b border-gray-100 bg-white/50 animate-pulse" style={{ height: "48px", minHeight: "48px", maxHeight: "48px" }}>
       {enableSelection && (
-        <td className="px-4 py-3">
+        <td className="px-4" style={{ height: "48px", minHeight: "48px", maxHeight: "48px", padding: "0 16px", lineHeight: "48px", verticalAlign: "middle" }}>
           <div className="flex items-center justify-center">
             <div className="h-4 w-4 bg-gray-300 rounded animate-pulse"></div>
           </div>
         </td>
       )}
       {Array.from({ length: columnsCount }).map((_, index) => (
-        <td key={index} className="px-4 py-3">
+        <td key={index} className="px-4" style={{ height: "48px", minHeight: "48px", maxHeight: "48px", padding: "0 16px", lineHeight: "48px", verticalAlign: "middle" }}>
           <div className="flex items-center">
             <div 
               className="h-4 bg-gray-300 rounded-md animate-pulse"
@@ -125,11 +126,11 @@ function TableSkeleton({ rowCount = 10 }: { rowCount?: number }) {
   const showSelection = enableBulkSelection && isSelectionMode
 
   // Calculate a reasonable number of rows based on typical viewport
-  // Each row is 64px (h-16), so ~8-10 rows should fit in most viewports
+  // Each row is 48px (h-12), so ~8-10 rows should fit in most viewports
   const visibleRowCount = Math.min(rowCount, 10)
 
   return (
-    <tbody className="h-full">
+    <tbody>
       {Array.from({ length: visibleRowCount }).map((_, index) => (
         <SkeletonRow 
           key={`skeleton-${index}`} 
@@ -478,15 +479,15 @@ function AdvancedTableRoot<T>({
           return acc + (col?.minWidth || 120)
         }, 0)
 
-        // Check if this is the last left sticky column to add right shadow
-        const isLastLeftColumn = index === leftColumns.length - 1
+        // Check if this is the first left sticky column to add left shadow
+        const isFirstLeftColumn = index === 0
 
         return {
           position: "sticky" as const,
           left: leftOffset,
           zIndex: isFooter ? 50 : 20,
           backgroundColor: "inherit",
-          boxShadow: isLastLeftColumn ? "2px 0 4px -2px rgba(0, 0, 0, 0.1)" : "none",
+          boxShadow: isFirstLeftColumn ? "-4px 0 1px -3px hsl(240 5.9% 90%) inset" : "none",
         }
       }
 
@@ -503,9 +504,9 @@ function AdvancedTableRoot<T>({
         return {
           position: "sticky" as const,
           right: rightOffset,
-          zIndex: isFooter ? 50 : 20,
+          zIndex: isFooter ? 110 : 20,
           backgroundColor: "inherit",
-          boxShadow: isFirstRightColumn ? "-2px 0 4px -2px rgba(0, 0, 0, 0.1)" : "none",
+          boxShadow: isFirstRightColumn ? "-4px 0 1px -3px hsl(240 5.9% 90%) inset" : "none",
         }
       }
 
@@ -629,15 +630,17 @@ function AdvancedTableContainer({
   }, [hasNextPage, fetchNextPage, isFetchingNextPage])
 
   return (
-    <div
-      ref={tableContainerRef}
-      className={cn("flex-1 overflow-auto relative", className)}
-      style={{
-        WebkitUserSelect: enableBulkSelection && pressStartTime > 0 ? "none" : "auto",
-        userSelect: enableBulkSelection && pressStartTime > 0 ? "none" : "auto",
-      }}
-    >
-      {children}
+    <div className={cn("flex flex-col flex-1 overflow-hidden", className)}>
+      <div
+        ref={tableContainerRef}
+        className="flex-1 overflow-auto"
+        style={{
+          WebkitUserSelect: enableBulkSelection && pressStartTime > 0 ? "none" : "auto",
+          userSelect: enableBulkSelection && pressStartTime > 0 ? "none" : "auto",
+        }}
+      >
+        {children}
+      </div>
     </div>
   )
 }
@@ -645,7 +648,7 @@ function AdvancedTableContainer({
 // Table component - FIXED: Proper table layout without nested divs
 function AdvancedTableTable({ children }: { children: React.ReactNode }) {
   return (
-    <table className="w-full border-collapse table-fixed h-full">
+    <table className="w-full border-collapse advanced-table" style={{ tableLayout: 'auto' }}>
       {children}
     </table>
   )
@@ -658,7 +661,7 @@ function AdvancedTableHeader() {
   return (
     <thead className="sticky top-0 bg-white z-30 shadow-sm">
       {table.getHeaderGroups().map((headerGroup) => (
-        <tr key={headerGroup.id} className="h-10 border-b border-gray-200">
+        <tr key={headerGroup.id} className="border-b border-gray-200" style={{ height: "48px", minHeight: "48px", maxHeight: "48px" }}>
           {headerGroup.headers.map((header) => {
             const stickyStyles = getStickyStyles(header.column.id, false)
             const column = columns.find((c: any) => c.id === header.column.id)
@@ -667,22 +670,27 @@ function AdvancedTableHeader() {
               <th
                 key={header.id}
                 className={cn(
-                  "h-10 px-4 text-left align-middle text-sm font-medium text-gray-600 bg-white",
+                  "px-4 text-left align-middle text-sm font-medium text-gray-600 bg-white",
                   stickyStyles.position && "z-20",
                 )}
                 style={{
                   ...stickyStyles,
                   backgroundColor: "white",
-                  minWidth: (column as any)?.minWidth || 120,
-                  maxWidth: (column as any)?.minWidth || 120,
                   position: "sticky",
                   top: 0,
                   zIndex: stickyStyles.position ? 40 : 30,
+                  height: "48px",
+                  minHeight: "48px",
+                  maxHeight: "48px",
+                  padding: "12px 16px",
+                  verticalAlign: "middle",
+                  width: (column as any)?.minWidth ? `${(column as any).minWidth}px` : undefined,
+                  minWidth: (column as any)?.minWidth ? `${(column as any).minWidth}px` : undefined,
                 }}
               >
                 {header.isPlaceholder ? null : (
-                  <div className="flex items-center gap-1 truncate">
-                    <span className="truncate">
+                  <div className="flex items-center gap-1 h-full">
+                    <span className="text-sm font-medium text-gray-600 whitespace-nowrap">
                       {flexRender(header.column.columnDef.header, header.getContext())}
                     </span>
                     {header.column.getCanSort() && (
@@ -781,11 +789,16 @@ function AdvancedTableBody() {
         <tr
           key={row.id}
           className={cn(
-            "h-12 border-b border-gray-200 text-sm hover:bg-gray-50/50 transition-colors",
+            "border-b border-gray-200 text-sm hover:bg-gray-50/50 transition-colors",
             enableBulkSelection ? "select-none" : "",
             onRowClick ? "cursor-pointer" : "",
             enableBulkSelection && selectedRows.has(row.index) && "bg-blue-50",
           )}
+          style={{ 
+            height: "48px", 
+            minHeight: "48px", 
+            maxHeight: "48px",
+          }}
           onClick={(e) => handleRowClick(row.original, row.index, e)}
           onMouseDown={
             enableBulkSelection
@@ -811,17 +824,30 @@ function AdvancedTableBody() {
               <td
                 key={cell.id}
                 className={cn(
-                  "h-12 px-4 align-middle bg-white",
+                  "px-4 align-middle bg-white",
                   stickyStyles.position && "z-10"
                 )}
                 style={{
                   ...stickyStyles,
                   backgroundColor: "white",
-                  minWidth: (column as any)?.minWidth || 120,
-                  maxWidth: (column as any)?.minWidth || 120,
+                  height: "48px",
+                  minHeight: "48px",
+                  maxHeight: "48px",
+                  padding: "0 16px",
+                  lineHeight: "48px",
+                  verticalAlign: "middle",
+                  width: (column as any)?.minWidth ? `${(column as any).minWidth}px` : undefined,
+                  minWidth: (column as any)?.minWidth ? `${(column as any).minWidth}px` : undefined,
                 }}
               >
-                <div className="truncate" title={typeof flexRender(cell.column.columnDef.cell, cell.getContext()) === 'string' ? flexRender(cell.column.columnDef.cell, cell.getContext()) as string : undefined}>
+                <div 
+                  style={{ 
+                    lineHeight: "48px",
+                    height: "48px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </div>
               </td>
@@ -845,7 +871,7 @@ function AdvancedTableBody() {
   )
 }
 
-// Footer component - FIXED: Proper tfoot element inside table
+// Footer component - Now integrated within the table structure
 interface AdvancedTableFooterProps {
   footerData?: Record<string, any>
 }
@@ -858,19 +884,22 @@ function AdvancedTableFooter({ footerData }: AdvancedTableFooterProps) {
   }
 
   return (
-    <tfoot className="bg-gray-50 border-t border-gray-200">
-      <tr>
+    <tfoot className="sticky bottom-0 bg-gray-50 z-30 border-t border-gray-200">
+      <tr style={{ height: "48px", minHeight: "48px", maxHeight: "48px" }}>
         {enableBulkSelection && isSelectionMode && (
           <td 
-            className="font-medium px-4 py-3 bg-gray-50" 
+            className="font-medium px-4 bg-gray-50" 
             style={{ 
+              width: 50,
               minWidth: 50,
               maxWidth: 50,
-              position: "sticky",
-              left: 0,
-              zIndex: 110,
+              height: "48px",
+              minHeight: "48px",
+              maxHeight: "48px",
+              padding: "0 16px",
+              lineHeight: "48px",
+              verticalAlign: "middle",
               backgroundColor: "#f9fafb",
-              boxShadow: "2px 0 4px -2px rgba(0, 0, 0, 0.1)",
             }}
           >
             {/* Empty cell for checkbox column */}
@@ -883,19 +912,45 @@ function AdvancedTableFooter({ footerData }: AdvancedTableFooterProps) {
             const column = columns.find((c: any) => c.id === header.column.id)
             const footerValue = footerData[header.column.id]
 
+            // Determine alignment based on column type (numeric columns are right-aligned)
+            const isNumericColumn = header.column.id === 'inbound' || 
+                                  header.column.id === 'outbound' || 
+                                  header.column.id === 'adjustment' || 
+                                  header.column.id === 'onHand' || 
+                                  header.column.id === 'available' || 
+                                  header.column.id === 'onHold'
+
             return (
               <td
                 key={header.id}
-                className={cn("font-medium px-4 py-3 bg-gray-50", stickyStyles.position && "z-50")}
+                className={cn(
+                  "font-medium px-4 bg-gray-50 last:border-r-0",
+                  stickyStyles.position && "z-50"
+                )}
                 style={{
                   ...stickyStyles,
                   backgroundColor: "#f9fafb",
-                  minWidth: (column as any)?.minWidth || 120,
-                  maxWidth: (column as any)?.minWidth || 120,
+                  height: "48px",
+                  minHeight: "48px",
+                  maxHeight: "48px",
+                  padding: "0 16px",
+                  lineHeight: "48px",
+                  verticalAlign: "middle",
                   zIndex: stickyStyles.position ? 110 : 100,
+                  width: (column as any)?.minWidth ? `${(column as any).minWidth}px` : undefined,
+                  minWidth: (column as any)?.minWidth ? `${(column as any).minWidth}px` : undefined,
                 }}
               >
-                <div className="truncate" title={footerValue !== undefined && footerValue !== null ? String(footerValue) : undefined}>
+                <div 
+                  className={cn(isNumericColumn && "text-right")}
+                  style={{ 
+                    lineHeight: "48px",
+                    height: "48px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: isNumericColumn ? "flex-start" : "flex-start",
+                  }}
+                >
                   {footerValue !== undefined && footerValue !== null ? footerValue : ""}
                 </div>
               </td>

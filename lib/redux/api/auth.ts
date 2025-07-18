@@ -1,5 +1,6 @@
 import { api } from '@/lib/redux/api';
 import { loginCredentials, resetUserCred } from '@/utils/helper';
+import { handleApiError } from '@/utils/errorHandler';
 
 // Passing Tag arguments to builder api to use automatic re-fetching 😀
 const tagInjection: any = api.enhanceEndpoints({ addTagTypes: ['UserProfile'] });
@@ -18,6 +19,13 @@ export const authApi = tagInjection.injectEndpoints({
       },
       invalidatesTags: ['UserProfile'],
       transformResponse: (res: any) => {
+        // console.log("Login response:", res);
+        
+        // Check if this is actually an error response disguised as success
+        if (res?.statusCode && res.statusCode >= 400) {
+          return res?.response || res;
+        }
+        
         if (res?.response && (res?.statusCode === 0 || res?.statusCode === 200)) {
           // Only store credentials if login was successful
           loginCredentials('userCred', res?.response);
@@ -33,60 +41,9 @@ export const authApi = tagInjection.injectEndpoints({
       transformErrorResponse: (errorResponse: any) => {
         // Clear any existing credentials on login error
         resetUserCred();
-        return errorResponse;
-      },
-    }),
-    resetEmail: builder.mutation({
-      query(body: any) {
-        return {
-          url: `core/api/auth/PasswordResetToken`,
-          method: 'post',
-          body,
-        };
-      },
-      transformResponse: (res: any) => {
-        return res;
-      },
-    }),
-    reset: builder.mutation({
-      query(body: any) {
-        return {
-          url: `core/api/auth/PasswordResetToken`,
-          method: 'post',
-          body,
-          needError: true,
-        };
-      },
-      transformResponse: (res: any) => {
-        return res;
-      },
-    }),
-    forgotPassword: builder.mutation({
-      query(body: any) {
-        return {
-          url: `core/api/auth/ResetPassword`,
-          body,
-          method: 'post',
-          needError: true,
-          successCode: 2,
-        };
-      },
-      transformResponse: (res: any) => {
-        return res;
-      },
-    }),
-    resendLink: builder.mutation({
-      query(body: any) {
-        return {
-          url: `core/api/auth/ResendActivationMail`,
-          body,
-          method: 'post',
-          needError: true,
-          successCode: 3,
-        };
-      },
-      transformResponse: (res: any) => {
-        return res;
+        console.log(errorResponse);
+        
+
       },
     }),
     tokenValidate: builder.mutation({
@@ -96,6 +53,9 @@ export const authApi = tagInjection.injectEndpoints({
           body,
           method: 'post',
         };
+      },
+      transformErrorResponse: (errorResponse: any) => {
+        return
       },
     }),
     logout: builder.mutation({
@@ -110,6 +70,9 @@ export const authApi = tagInjection.injectEndpoints({
         resetUserCred();
         return res;
       },
+      transformErrorResponse: (errorResponse: any) => {
+        resetUserCred();
+      },
     }),
   }),
   overrideExisting: true,
@@ -119,10 +82,6 @@ export const authApi = tagInjection.injectEndpoints({
 // auto-generated based on the defined endpoints.
 export const {
   useLoginMutation,
-  useResetEmailMutation,
-  useResetMutation,
-  useForgotPasswordMutation,
-  useResendLinkMutation,
   useTokenValidateMutation,
   useLogoutMutation,
 } = authApi;

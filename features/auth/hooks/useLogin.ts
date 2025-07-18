@@ -4,10 +4,9 @@ import { useLoginMutation } from "@/lib/redux/api/auth"
 import { encryptedMessage } from "@/utils/rsa"
 import type { 
   LoginFormData, 
-  LoginSuccessResponse, 
-  LoginErrorResponse 
+  LoginSuccessResponse 
 } from "../types/auth.types"
-import { handleLoginSuccess, isLoginSuccessful, extractValidationErrors } from "../utils/auth.utils"
+import { handleLoginSuccess, isLoginSuccessful } from "../utils/auth.utils"
 import { isValidToken } from "@/utils/helper"
 
 interface UseLoginReturn {
@@ -27,9 +26,6 @@ export const useLogin = (): UseLoginReturn => {
   }, [])
 
   const login = useCallback(async (data: LoginFormData) => {
-    console.log("123")
-    console.log("Data : ", data)
-    
     try {
       setError(null)
 
@@ -46,45 +42,32 @@ export const useLogin = (): UseLoginReturn => {
 
       const response = await loginMutation(body).unwrap() as LoginSuccessResponse
 
+      // console.log("Login response:", response)
       // Check if login was successful and token exists
       if (isLoginSuccessful(response)) {
         // Double-check that we have a token and it's valid before redirecting
         if (response?.response?.token && isValidToken(response.response.token, response.response.expiryDate)) {
-          console.log("Valid token received, redirecting to orders page")
           // Successful login - redirect with a shorter delay to ensure credentials are saved
           handleLoginSuccess(() => {
             router.push("/dashboard")
           }, 100)
         } else {
-          console.log("Login response didn't contain valid token:", response)
           setError("Authentication failed. Invalid or expired token received.")
         }
       } else {
-        setError("Invalid credentials. Please check your email and password.")
+        // console.log("Login response:", response?.message)
+        // For unsuccessful responses, use the API message or fallback to generic message
+        setError(response?.message ? `Login failed: ${response.message}` : "Login failed due to an unknown error.")
       }
     } catch (error: unknown) {
-      console.error("Error :",error)
-      const apiError = error as LoginErrorResponse
-       console.error("Error API:",apiError)
-
-      // Handle API error response format
-      if (apiError?.response?.validationFailed && apiError?.response?.validationErrors) {
-        const validationMessages = extractValidationErrors(apiError.response.validationErrors)
-        setError(validationMessages || "Validation failed")
-      } else if (apiError?.response?.message) {
-        setError(apiError.response.message)
-      } else if (apiError?.message) {
-        setError(apiError.message)
-      } else {
-        setError("Unable to connect. Please check your internet connection and try again.")
-      }
+      console.error("Login error:", error)
     }
   }, [loginMutation, router])
 
   return {
     login,
     isLoading,
-    error,
+    error: error, // Only show local validation errors, Redux handles API errors via toast
     clearError,
   }
 }

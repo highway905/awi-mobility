@@ -1,31 +1,48 @@
 import { useState, useEffect } from 'react'
-import { useGetCustomerDropdownListQuery } from '@/lib/redux/api/orderManagement'
+import { useGetWarehouseLocationDropdownListQuery } from '@/lib/redux/api/orderManagement'
 
-interface Customer {
+interface Warehouse {
   id: string
-  customerName: string
+  name: string
+  displayName: string
+  address1: string
+  address2: string
+  city: string
+  stateId: string
+  state: string
+  zipCode: string
+  country: string
+  countryId: string
+  phone: string
+  fax: string
+  email: string
+  canvasHeight: number
+  canvasWidth: number
+  companyName: string
+  countryCode: string
+  stateCode: string
 }
 
-interface CachedCustomerData {
-  customers: Customer[]
+interface CachedWarehouseData {
+  warehouses: Warehouse[]
   timestamp: number
   expiresAt: number
 }
 
-const CACHE_KEY = 'customer_dropdown_cache'
+const CACHE_KEY = 'warehouse_dropdown_cache'
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
 
-export function useCustomerCache(enabled: boolean = true) {
-  const [cachedCustomers, setCachedCustomers] = useState<Customer[]>([])
+export function useWarehouseCache(enabled: boolean = true) {
+  const [cachedWarehouses, setCachedWarehouses] = useState<Warehouse[]>([])
   const [isUsingCache, setIsUsingCache] = useState(false)
 
   // Check if we have valid cached data
-  const getCachedData = (): CachedCustomerData | null => {
+  const getCachedData = (): CachedWarehouseData | null => {
     try {
       const cached = localStorage.getItem(CACHE_KEY)
       if (!cached) return null
 
-      const parsedCache: CachedCustomerData = JSON.parse(cached)
+      const parsedCache: CachedWarehouseData = JSON.parse(cached)
       const now = Date.now()
 
       // Check if cache is still valid
@@ -37,24 +54,24 @@ export function useCustomerCache(enabled: boolean = true) {
         return null
       }
     } catch (error) {
-      console.error('Error reading customer cache:', error)
+      console.error('Error reading warehouse cache:', error)
       localStorage.removeItem(CACHE_KEY)
       return null
     }
   }
 
   // Save data to cache
-  const setCacheData = (customers: Customer[]) => {
+  const setCacheData = (warehouses: Warehouse[]) => {
     try {
       const now = Date.now()
-      const cacheData: CachedCustomerData = {
-        customers,
+      const cacheData: CachedWarehouseData = {
+        warehouses,
         timestamp: now,
         expiresAt: now + CACHE_DURATION
       }
       localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
     } catch (error) {
-      console.error('Error saving customer cache:', error)
+      console.error('Error saving warehouse cache:', error)
     }
   }
 
@@ -63,22 +80,22 @@ export function useCustomerCache(enabled: boolean = true) {
     if (enabled) {
       const cached = getCachedData()
       if (cached) {
-        setCachedCustomers(cached.customers)
+        setCachedWarehouses(cached.warehouses)
         setIsUsingCache(true)
       }
     }
   }, [enabled])
 
   // Determine if we should skip the API call - now also depends on enabled flag
-  const shouldSkipApiCall = !enabled || (isUsingCache && cachedCustomers.length > 0)
+  const shouldSkipApiCall = !enabled || (isUsingCache && cachedWarehouses.length > 0)
 
   // Make API call only if enabled and we don't have valid cached data
   const {
-    data: customerData,
+    data: warehouseData,
     isFetching,
     error,
     isLoading,
-  } = useGetCustomerDropdownListQuery(undefined, {
+  } = useGetWarehouseLocationDropdownListQuery(undefined, {
     skip: shouldSkipApiCall,
     refetchOnMountOrArgChange: false, // Don't refetch on mount if we have cache
     refetchOnFocus: false, // Don't refetch when window regains focus
@@ -87,30 +104,28 @@ export function useCustomerCache(enabled: boolean = true) {
 
   // Process and cache new API data - only when enabled
   useEffect(() => {
-    if (enabled && customerData && !shouldSkipApiCall) {
-      let processedCustomers: Customer[] = []
+    if (enabled && warehouseData && !shouldSkipApiCall) {
+      let processedWarehouses: Warehouse[] = []
 
-      // Handle different possible response structures
-      if (customerData.response && Array.isArray(customerData.response)) {
-        processedCustomers = customerData.response
-      } else if (Array.isArray(customerData)) {
-        processedCustomers = customerData
-      } else if (customerData.items && Array.isArray(customerData.items)) {
-        processedCustomers = customerData.items
+      // Handle the expected response structure
+      if (warehouseData.response && Array.isArray(warehouseData.response)) {
+        processedWarehouses = warehouseData.response
+      } else if (Array.isArray(warehouseData)) {
+        processedWarehouses = warehouseData
       }
 
-      if (processedCustomers.length > 0) {
-        setCachedCustomers(processedCustomers)
-        setCacheData(processedCustomers)
+      if (processedWarehouses.length > 0) {
+        setCachedWarehouses(processedWarehouses)
+        setCacheData(processedWarehouses)
         setIsUsingCache(true)
       }
     }
-  }, [enabled, customerData, shouldSkipApiCall])
+  }, [enabled, warehouseData, shouldSkipApiCall])
 
   // Clear cache function (useful for manual refresh)
   const clearCache = () => {
     localStorage.removeItem(CACHE_KEY)
-    setCachedCustomers([])
+    setCachedWarehouses([])
     setIsUsingCache(false)
   }
 
@@ -120,8 +135,14 @@ export function useCustomerCache(enabled: boolean = true) {
     // This will trigger a new API call on next render
   }
 
+  // Helper function to get warehouse by ID
+  const getWarehouseById = (warehouseId: string) => {
+    return cachedWarehouses.find(warehouse => warehouse.id === warehouseId)
+  }
+
   return {
-    customers: enabled ? cachedCustomers : [],
+    warehouses: enabled ? cachedWarehouses : [],
+    getWarehouseById,
     isLoading: enabled ? (isLoading && !isUsingCache) : false,
     isFetching: enabled ? (isFetching && !isUsingCache) : false,
     error: enabled ? (error && !isUsingCache ? error : null) : null,

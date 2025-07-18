@@ -1,16 +1,25 @@
 "use client"
 
-import { useState } from "react"
-import { X, Package, MapPin, Hash, BarChart3 } from "lucide-react"
+import { useState, useEffect, memo, useCallback, useMemo } from "react"
+import { X, Package, MapPin, Hash, BarChart3, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { useInventoryLocationCache, useWarehouseCache, useCustomerCache } from "@/hooks"
 import type { AdvancedTableColumn } from "@/features/shared/components/advanced-table"
 import type { InventoryItem } from "../hooks/use-inventory-data"
 
+// Define InventoryLocation interface locally to avoid import issues
+interface InventoryLocation {
+  id: string
+  locationName: string
+  warehouseName?: string
+}
+
 interface FilterState {
+  customer: string
   sku: string
   warehouse: string
   location: string
@@ -35,43 +44,71 @@ interface InventoryFilterSheetProps {
   onFiltersChange: (filters: any) => void
   columns: AdvancedTableColumn<InventoryItem>[]
   showCustomerColumns: boolean
+  currentFilters?: Partial<FilterState>
 }
 
-export function InventoryFilterSheet({
+export const InventoryFilterSheet = memo(function InventoryFilterSheet({
   open,
   onOpenChange,
   onFiltersChange,
   columns,
   showCustomerColumns,
+  currentFilters = {},
 }: InventoryFilterSheetProps) {
   const [filters, setFilters] = useState<FilterState>({
-    sku: "",
-    warehouse: "",
-    location: "",
-    palletId: "",
-    inboundMin: "",
-    inboundMax: "",
-    outboundMin: "",
-    outboundMax: "",
-    adjustmentMin: "",
-    adjustmentMax: "",
-    onHandMin: "",
-    onHandMax: "",
-    availableMin: "",
-    availableMax: "",
-    onHoldMin: "",
-    onHoldMax: "",
+    customer: currentFilters.customer || "",
+    sku: currentFilters.sku || "",
+    warehouse: currentFilters.warehouse || "",
+    location: currentFilters.location || "",
+    palletId: currentFilters.palletId || "",
+    inboundMin: currentFilters.inboundMin || "",
+    inboundMax: currentFilters.inboundMax || "",
+    outboundMin: currentFilters.outboundMin || "",
+    outboundMax: currentFilters.outboundMax || "",
+    adjustmentMin: currentFilters.adjustmentMin || "",
+    adjustmentMax: currentFilters.adjustmentMax || "",
+    onHandMin: currentFilters.onHandMin || "",
+    onHandMax: currentFilters.onHandMax || "",
+    availableMin: currentFilters.availableMin || "",
+    availableMax: currentFilters.availableMax || "",
+    onHoldMin: currentFilters.onHoldMin || "",
+    onHoldMax: currentFilters.onHoldMax || "",
   })
 
-  const handleFilterChange = (key: keyof FilterState, value: string) => {
-    const newFilters = { ...filters, [key]: value }
-    setFilters(newFilters)
-  }
+  // Sync with currentFilters when they change - use callback to prevent unnecessary updates
+  useEffect(() => {
+    if (open) {
+      setFilters({
+        customer: currentFilters.customer || "",
+        sku: currentFilters.sku || "",
+        warehouse: currentFilters.warehouse || "",
+        location: currentFilters.location || "",
+        palletId: currentFilters.palletId || "",
+        inboundMin: currentFilters.inboundMin || "",
+        inboundMax: currentFilters.inboundMax || "",
+        outboundMin: currentFilters.outboundMin || "",
+        outboundMax: currentFilters.outboundMax || "",
+        adjustmentMin: currentFilters.adjustmentMin || "",
+        adjustmentMax: currentFilters.adjustmentMax || "",
+        onHandMin: currentFilters.onHandMin || "",
+        onHandMax: currentFilters.onHandMax || "",
+        availableMin: currentFilters.availableMin || "",
+        availableMax: currentFilters.availableMax || "",
+        onHoldMin: currentFilters.onHoldMin || "",
+        onHoldMax: currentFilters.onHoldMax || "",
+      })
+    }
+  }, [open, currentFilters])
 
-  const handleApplyFilters = () => {
+  const handleFilterChange = useCallback((key: keyof FilterState, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+  }, [])
+
+  const handleApplyFilters = useCallback(() => {
     // Convert filters to API format, only include non-empty values
     const apiFilters: any = {}
     
+    if (filters.customer) apiFilters.customerId = filters.customer
     if (filters.sku) apiFilters.sku = filters.sku
     if (filters.warehouse) apiFilters.warehouseId = filters.warehouse
     if (filters.location) apiFilters.locationId = filters.location
@@ -96,10 +133,11 @@ export function InventoryFilterSheet({
     
     onFiltersChange(apiFilters)
     onOpenChange(false)
-  }
+  }, [filters, showCustomerColumns, onFiltersChange, onOpenChange])
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     const resetFilters = {
+      customer: "",
       sku: "",
       warehouse: "",
       location: "",
@@ -119,28 +157,64 @@ export function InventoryFilterSheet({
     }
     setFilters(resetFilters)
     onFiltersChange({}) // Send empty object to clear all filters
+  }, [onFiltersChange])
+
+  // Check which columns are available - memoized to prevent re-computation
+  // const { hasWarehouseColumn, hasLocationColumn, hasPalletIdColumn } = useMemo(() => ({
+  //   hasWarehouseColumn: columns.some(col => col.key === "warehouse"),
+  //   hasLocationColumn: columns.some(col => col.key === "location"),
+  //   hasPalletIdColumn: columns.some(col => col.key === "palletId")
+  // }), [columns])
+
+  // Only fetch data when sheet is open to improve performance
+  const { 
+    customers: apiCustomers = [], 
+    isLoading: isLoadingCustomers = false,
+    error: customersError 
+  } = useCustomerCache(open) // Only fetch when sheet is open
+
+  // Use warehouse cache hook for warehouses - only when sheet is open
+  const { 
+    warehouses: apiWarehouses = [], 
+    isLoading: isLoadingWarehouses = false,
+    error: warehousesError 
+  } = useWarehouseCache(open) // Only fetch when sheet is open
+
+  // Use inventory location cache hook for locations - only when sheet is open and warehouse selected
+  // const shouldFetchLocations = open && filters.warehouse && filters.warehouse !== ""
+  
+  const shouldFetchLocations = false 
+
+  const locationHookResult = useInventoryLocationCache({
+    searchKey: "",
+    sortColumn: "locationName",
+    sortDirection: "asc",
+    pageIndex: 0,
+    pageSize: 1000,
+    warehouseId: shouldFetchLocations ? filters.warehouse : "", // Pass the selected warehouse ID
+    locationTypeId: []
+  }, shouldFetchLocations) // Only fetch when sheet is open and warehouse is selected
+  
+  // Handle potential errors gracefully when accessing hook data
+  let apiLocations: InventoryLocation[] = []
+  let isLoadingLocations = false
+  let locationsError = null
+  
+  if (shouldFetchLocations) {
+    try {
+      apiLocations = locationHookResult?.locations || []
+      isLoadingLocations = locationHookResult?.isLoading || false
+      locationsError = locationHookResult?.error || null
+    } catch (error) {
+      locationsError = error
+    }
   }
 
-  // Check which columns are available
-  const hasWarehouseColumn = columns.some(col => col.key === "warehouse")
-  const hasLocationColumn = columns.some(col => col.key === "location")
-  const hasPalletIdColumn = columns.some(col => col.key === "palletId")
-
-  // Mock data for dropdowns - in real app, these would come from API
-  const warehouses = [
-    { id: "main", name: "Main Warehouse" },
-    { id: "secondary", name: "Secondary Warehouse" },
-    { id: "distribution", name: "Distribution Center" },
-  ]
-
-  const locations = [
-    { id: "a-01-01", name: "A-01-01" },
-    { id: "a-01-02", name: "A-01-02" },
-    { id: "b-02-01", name: "B-02-01" },
-    { id: "b-02-02", name: "B-02-02" },
-    { id: "c-03-01", name: "C-03-01" },
-    { id: "c-03-02", name: "C-03-02" },
-  ]
+  // Since we're filtering by warehouse ID in the API call, we can use locations directly
+  const getFilteredLocations = () => {
+    // API already filters by warehouse ID, so return all locations from API
+    return apiLocations
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -177,8 +251,44 @@ export function InventoryFilterSheet({
               />
             </div>
 
+            {/* Customer Filter */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Customer
+              </Label>
+              <Select
+                value={filters.customer || "all"}
+                onValueChange={(value) => {
+                  const newCustomer = value === "all" ? "" : value
+                  handleFilterChange("customer", newCustomer)
+                  // Clear dependent filters when customer changes
+                  if (newCustomer !== filters.customer) {
+                    handleFilterChange("warehouse", "")
+                    handleFilterChange("location", "")
+                  }
+                }}
+                disabled={isLoadingCustomers}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingCustomers ? "Loading customers..." : "Select customer"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Customers</SelectItem>
+                  {apiCustomers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.customerName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {customersError && (
+                <p className="text-xs text-red-600">Failed to load customers</p>
+              )}
+            </div>
+
             {/* Warehouse Filter - only show if warehouse column exists */}
-            {hasWarehouseColumn && (
+          
               <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Package className="h-4 w-4" />
@@ -186,26 +296,38 @@ export function InventoryFilterSheet({
                 </Label>
                 <Select
                   value={filters.warehouse || "all"}
-                  onValueChange={(value) => handleFilterChange("warehouse", value === "all" ? "" : value)}
+                  onValueChange={(value) => {
+                    const newWarehouse = value === "all" ? "" : value
+                    handleFilterChange("warehouse", newWarehouse)
+                    // Clear location filter when warehouse changes
+                    if (newWarehouse !== filters.warehouse) {
+                      handleFilterChange("location", "")
+                      // Note: Cache will automatically handle different warehouse IDs due to cache key generation
+                    }
+                  }}
+                  disabled={isLoadingWarehouses}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select warehouse" />
+                    <SelectValue placeholder={isLoadingWarehouses ? "Loading warehouses..." : "Select warehouse"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Warehouses</SelectItem>
-                    {warehouses.map((warehouse) => (
+                    {apiWarehouses.map((warehouse) => (
                       <SelectItem key={warehouse.id} value={warehouse.id}>
-                        {warehouse.name}
+                        {warehouse.displayName || warehouse.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {warehousesError && (
+                  <p className="text-xs text-red-600">Failed to load warehouses</p>
+                )}
               </div>
-            )}
+            
 
             {/* Location Filter */}
-            {hasLocationColumn && (
-              <div className="space-y-2">
+
+              {/* <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   Location
@@ -213,24 +335,32 @@ export function InventoryFilterSheet({
                 <Select
                   value={filters.location || "all"}
                   onValueChange={(value) => handleFilterChange("location", value === "all" ? "" : value)}
+                  disabled={isLoadingLocations || (isLoadingWarehouses && !!filters.warehouse)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select location" />
+                    <SelectValue placeholder={isLoadingLocations ? "Loading locations..." : "Select location"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Locations</SelectItem>
-                    {locations.map((location) => (
+                    {getFilteredLocations().map((location) => (
                       <SelectItem key={location.id} value={location.id}>
-                        {location.name}
+                        {location.locationName}
+                        {location.warehouseName && ` (${location.warehouseName})`}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-            )}
+                {locationsError && (
+                  <p className="text-xs text-red-600">Failed to load locations</p>
+                )}
+                {filters.warehouse && getFilteredLocations().length === 0 && !isLoadingLocations && (
+                  <p className="text-xs text-gray-500">No locations found for selected warehouse</p>
+                )}
+              </div> */}
+            
 
             {/* Pallet ID Filter */}
-            {hasPalletIdColumn && (
+            
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Pallet ID</Label>
                 <Input
@@ -239,134 +369,9 @@ export function InventoryFilterSheet({
                   onChange={(e) => handleFilterChange("palletId", e.target.value)}
                 />
               </div>
-            )}
+            
 
-            {/* Numeric Range Filters */}
-            <div className="space-y-4">
-              <Label className="text-sm font-medium flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Quantity Ranges
-              </Label>
-
-              {/* Inbound Range */}
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-600">Inbound Quantity</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.inboundMin}
-                    onChange={(e) => handleFilterChange("inboundMin", e.target.value)}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Max"
-                    value={filters.inboundMax}
-                    onChange={(e) => handleFilterChange("inboundMax", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Outbound Range */}
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-600">Outbound Quantity</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.outboundMin}
-                    onChange={(e) => handleFilterChange("outboundMin", e.target.value)}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Max"
-                    value={filters.outboundMax}
-                    onChange={(e) => handleFilterChange("outboundMax", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Adjustment Range */}
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-600">Adjustment Quantity</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.adjustmentMin}
-                    onChange={(e) => handleFilterChange("adjustmentMin", e.target.value)}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Max"
-                    value={filters.adjustmentMax}
-                    onChange={(e) => handleFilterChange("adjustmentMax", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* On Hand Range */}
-              <div className="space-y-2">
-                <Label className="text-xs text-gray-600">On Hand Quantity</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Min"
-                    value={filters.onHandMin}
-                    onChange={(e) => handleFilterChange("onHandMin", e.target.value)}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Max"
-                    value={filters.onHandMax}
-                    onChange={(e) => handleFilterChange("onHandMax", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Customer-specific columns */}
-              {showCustomerColumns && (
-                <>
-                  {/* Available Range */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-gray-600">Available Quantity</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="number"
-                        placeholder="Min"
-                        value={filters.availableMin}
-                        onChange={(e) => handleFilterChange("availableMin", e.target.value)}
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Max"
-                        value={filters.availableMax}
-                        onChange={(e) => handleFilterChange("availableMax", e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* On Hold Range */}
-                  <div className="space-y-2">
-                    <Label className="text-xs text-gray-600">On Hold Quantity</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        type="number"
-                        placeholder="Min"
-                        value={filters.onHoldMin}
-                        onChange={(e) => handleFilterChange("onHoldMin", e.target.value)}
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Max"
-                        value={filters.onHoldMax}
-                        onChange={(e) => handleFilterChange("onHoldMax", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+          
           </div>
         </div>
 
@@ -385,4 +390,4 @@ export function InventoryFilterSheet({
       </SheetContent>
     </Sheet>
   )
-}
+})

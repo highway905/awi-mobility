@@ -15,6 +15,26 @@ export interface InventoryItem {
   onHand: number
   available?: number
   onHold?: number
+  reserved?: number
+  description?: string
+  universalProductCode?: string
+  lotNumber?: string
+  expirationDate?: string
+  serialNumber?: string
+  poNumber?: string
+  receivedDate?: string
+  referenceId?: string
+  weightImperial?: number
+  weightMetric?: number
+  volumeCubicInches?: number
+  volumeCubicFeet?: number
+  notes?: string
+  customer?: string
+  transactionDate?: string
+  locationTypeName?: string
+  box?: string
+  itemName?: string
+  isTransloadSku?: boolean
 }
 
 export interface PaginationState {
@@ -33,6 +53,7 @@ export function useInventoryData(apiPayload: any, shouldFetch: boolean) {
   const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false)
   const [currentApiPayload, setCurrentApiPayload] = useState(apiPayload)
   const [lastSortingPayload, setLastSortingPayload] = useState<string>("")
+  const [lastCustomerId, setLastCustomerId] = useState<string>("")
 
   // Create a sorting key to detect sorting changes
   const sortingKey = `${apiPayload.sortColumn}-${apiPayload.sortDirection}`
@@ -41,6 +62,30 @@ export function useInventoryData(apiPayload: any, shouldFetch: boolean) {
   useEffect(() => {
     setCurrentApiPayload(apiPayload)
   }, [apiPayload])
+
+  // Reset pagination and accumulated data when customer changes
+  useEffect(() => {
+    if (lastCustomerId && lastCustomerId !== apiPayload.customerId) {
+      console.log("Customer changed, resetting pagination:", {
+        old: lastCustomerId,
+        new: apiPayload.customerId
+      })
+      
+      setPaginationState({
+        pageIndex: 1,
+        hasNextPage: false,
+        accumulatedData: [],
+      })
+      setHasInitiallyLoaded(false) // This will trigger skeleton loading
+      
+      // Update the API payload to trigger a fresh query
+      setCurrentApiPayload(prev => ({
+        ...prev,
+        pageIndex: 1
+      }))
+    }
+    setLastCustomerId(apiPayload.customerId)
+  }, [apiPayload.customerId, lastCustomerId])
 
   // Reset pagination and accumulated data when sorting changes
   useEffect(() => {
@@ -82,20 +127,41 @@ export function useInventoryData(apiPayload: any, shouldFetch: boolean) {
   // Process API response and map to InventoryItem interface
   const processedItems = useMemo(() => {
     if (!inventoryData?.items) return []
+    console.log("Processing inventory data...", inventoryData.items)
 
     return inventoryData.items.map(
       (item: any): InventoryItem => ({
-        id: item.id || item.sku,
+        id: item.id,
         sku: item.sku,
-        warehouse: item.warehouse || item.warehouseName,
-        location: item.location || item.locationName,
+        warehouse: item.warehouse,
+        location: item.locationDisplayName,
         palletId: item.pallet,
-        inbound: item.inbound || 0,
-        outbound: item.outbound || 0,
-        adjustment: item.adjustment || 0,
-        onHand: item.onHand || item.quantity || 0,
-        available: item.available || 0,
-        onHold: item.onHold || 0,
+        inbound: item.inboundQty || 0,
+        outbound: item.outboundQty || 0,
+        adjustment: item.adjustedQty || 0,
+        onHand: item.onHandQty || 0,
+        available: item.availableQty || 0,
+        onHold: item.onHoldQty || 0,
+        reserved: item.reservedQty || 0,
+        description: item.description,
+        universalProductCode: item.universalProductCode,
+        lotNumber: item.lotNumber,
+        expirationDate: item.expirationDate,
+        serialNumber: item.serialNumber,
+        poNumber: item.poNumber,
+        receivedDate: item.receivedDate,
+        referenceId: item.referenceId,
+        weightImperial: item.weightImperial,
+        weightMetric: item.weightMetric,
+        volumeCubicInches: item.volumeCubicInches,
+        volumeCubicFeet: item.volumeCubicFeet,
+        notes: item.note,
+        customer: item.customer,
+        transactionDate: item.transactionDate,
+        locationTypeName: item.locationTypeName,
+        box: item.box,
+        itemName: item.itemName,
+        isTransloadSku: item.isTransloadSku,
       }),
     )
   }, [inventoryData])
@@ -208,6 +274,21 @@ export function useInventoryData(apiPayload: any, shouldFetch: boolean) {
   // Determine loading states
   const isInitialLoading = shouldFetch && (isLoading || (isFetching && !hasInitiallyLoaded))
   const isRefreshing = shouldFetch && isFetching && hasInitiallyLoaded && currentApiPayload.pageIndex === 1
+
+  // Debug loading states
+  useEffect(() => {
+    console.log("useInventoryData loading states:", {
+      shouldFetch,
+      isLoading,
+      isFetching,
+      hasInitiallyLoaded,
+      isInitialLoading,
+      isRefreshing,
+      currentPageIndex: currentApiPayload.pageIndex,
+      itemsCount: processedItems.length,
+      inventoryDataExists: !!inventoryData?.items
+    })
+  }, [shouldFetch, isLoading, isFetching, hasInitiallyLoaded, isInitialLoading, isRefreshing, currentApiPayload.pageIndex, processedItems.length, inventoryData?.items])
 
   // Error message processing
   const errorMessage = useMemo(() => {

@@ -16,7 +16,6 @@ export default function Login() {
   const { login, isLoading: isLoginLoading, error: loginError } = useLogin()
 
   const handleLogin = async (data: LoginFormValues) => {
-    console.log("Entering Login handler")
 
     await login({
       email: data.email,

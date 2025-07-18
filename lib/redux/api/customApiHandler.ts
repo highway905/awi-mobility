@@ -156,7 +156,6 @@ const customApiHandler =
 
       return { data: result.data };
     } catch (error: any) {
-      console.error("API Error:", error);
       
       // For development/testing - simulate successful response for specific endpoints
       if (process.env.NODE_ENV === 'development' && url.includes('Order/GetAll')) {

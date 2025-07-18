@@ -45,24 +45,39 @@ export const handleApiError = (
   }
   
   // Get error details
-  const status = error?.response?.status;
-  const message = error?.response?.data?.response?.message || error?.message || 'An unexpected error occurred';
+  const status = error?.response?.status || error?.status;
+  let message = error?.response?.data?.response?.message || 
+                error?.response?.data?.message || 
+                error?.message || 
+                'An unexpected error occurred';
   
   // Determine error type
   let errorType = ErrorType.CLIENT;
   
-  if (!error.response) {
+  if (!error.response && !error.status) {
     errorType = ErrorType.NETWORK;
+    message = 'Unable to connect. Please check your internet connection and try again.';
   } else if (status === 401) {
     errorType = ErrorType.AUTHENTICATION;
+    message = message || 'Invalid credentials. Please check your email and password.';
   } else if (status === 403) {
     errorType = ErrorType.AUTHORIZATION;
+    message = message || 'You do not have permission to access this resource.';
   } else if (status === 404) {
     errorType = ErrorType.NOT_FOUND;
+    message = message || 'The requested resource was not found.';
   } else if (status >= 500) {
     errorType = ErrorType.SERVER;
+    // For server errors, check if it's specifically a "Network Error" message
+    if (message === 'Network Error') {
+      errorType = ErrorType.NETWORK;
+      message = 'Unable to connect. Please check your internet connection and try again.';
+    } else {
+      message = message || 'Server error. Please try again later.';
+    }
   } else if (status === 422 || status === 400) {
     errorType = ErrorType.VALIDATION;
+    // Keep the original message for validation errors
   }
   
   // Show toast notification if enabled

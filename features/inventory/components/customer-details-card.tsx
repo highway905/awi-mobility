@@ -21,12 +21,12 @@ export function CustomerDetailsCard({ details }: CustomerDetailsCardProps) {
         {/* First Row */}
         <div>
           <div className="text-sm text-gray-500 mb-1">Customer</div>
-          <div className="font-medium text-gray-900">{details.customer}</div>
+          <div className="font-medium text-gray-900">{details.customer || "-"}</div>
         </div>
 
         <div>
           <div className="text-sm text-gray-500 mb-1">Warehouse</div>
-          <div className="font-medium text-gray-900">{details.warehouse}</div>
+          <div className="font-medium text-gray-900">{details.warehouse || "-"}</div>
         </div>
 
         <div>
@@ -36,23 +36,23 @@ export function CustomerDetailsCard({ details }: CustomerDetailsCardProps) {
 
         <div>
           <div className="text-sm text-gray-500 mb-1">Lot#</div>
-          <div className="font-medium text-gray-900">{details.lotNumber}</div>
+          <div className="font-medium text-gray-900">{details.lotNumber || "-"}</div>
         </div>
 
         {/* Second Row */}
         <div>
           <div className="text-sm text-gray-500 mb-1">Expiration Date</div>
-          <div className="font-medium text-gray-900">{details.expirationDate}</div>
+          <div className="font-medium text-gray-900">{details.expirationDate || "-"}</div>
         </div>
 
         <div>
           <div className="text-sm text-gray-500 mb-1">Pallet ID</div>
-          <div className="font-medium text-gray-900">{details.palletId || details.pallet}</div>
+          <div className="font-medium text-gray-900">{details.palletId || details.pallet || "-"}</div>
         </div>
 
         <div>
           <div className="text-sm text-gray-500 mb-1">Location</div>
-          <div className="font-medium text-gray-900">{details.location}</div>
+          <div className="font-medium text-gray-900">{details.location || "-"}</div>
         </div>
 
         <div>{/* Empty cell for layout */}</div>

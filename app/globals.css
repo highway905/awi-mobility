@@ -112,4 +112,47 @@ body {
   animation: shimmer 2s infinite linear;
 }
 
+/* Ensure fixed row heights for table components */
+.advanced-table tr,
+.advanced-table thead tr,
+.advanced-table tbody tr,
+.advanced-table tfoot tr {
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  box-sizing: border-box;
+}
+
+.advanced-table th,
+.advanced-table td {
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  box-sizing: border-box;
+  vertical-align: middle !important;
+}
+
+.advanced-table th {
+  padding: 12px 16px !important;
+}
+
+.advanced-table td {
+  padding: 0 16px !important;
+}
+
+.advanced-table th > div,
+.advanced-table td > div {
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: visible !important;
+}
+
+.advanced-table th span {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
 

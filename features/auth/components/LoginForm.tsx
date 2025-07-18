@@ -44,7 +44,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             id="email"
             placeholder="m@example.com"
             type="email"
-            className="h-9 border-gray-300 focus:border-orange-400 focus:ring-orange-400"
+            className="h-9 border-[#D6D3D1] focus:border-[#D6D3D1] focus:ring-[#D6D3D1] bg-[#FFFFFF]"
             autoComplete="email"
             autoCapitalize="none"
             autoCorrect="off"
@@ -64,7 +64,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              className="h-9 border-gray-300 focus:border-orange-400 focus:ring-orange-400 pr-10"
+              className="h-9 border-[#D6D3D1] focus:border-[#D6D3D1] focus:ring-[#D6D3D1] bg-[#FFFFFF] pr-10"
               autoComplete="current-password"
               {...register("password")}
             />
@@ -90,7 +90,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         <Button
           type="submit"
-          className="w-full h-9 bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-white font-medium"
+          className="w-full h-9 bg-[#FBBF24] text-black font-medium hover:bg-[#FBBF24]"
           disabled={isLoading}
         >
           {isLoading ? "Logging in..." : "Login"}

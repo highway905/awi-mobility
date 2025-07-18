@@ -53,7 +53,7 @@ export function SearchWithCamera({
         onChange={handleSearchChange}
         style={{ height }}
       />
-      {showCamera && (
+      {/* {showCamera && (
         <button 
           onClick={handleCameraClick} 
           title="Scan barcode"
@@ -62,7 +62,7 @@ export function SearchWithCamera({
         >
           <Camera className="h-5 w-5" />
         </button>
-      )}
+      )} */}
     </div>
   )
 }
