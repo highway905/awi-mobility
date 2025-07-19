@@ -102,6 +102,9 @@ export const transformFilterToApiPayload = (
   if (filter.orderTypes?.length > 0) {
     payload.orderTypes = filter.orderTypes;
   }
+  else{
+    payload.orderTypes = ["B2B"]; // Default to B2B if no types specified
+  }
   if (filter.statuses?.length > 0) {
     payload.statuses = filter.statuses;
   }
@@ -115,7 +118,7 @@ export const transformFilterToApiPayload = (
       payload.moveType = 'Outbound';
       break;
     default:
-      payload.moveType = '';
+      payload.moveType = 'Inbound';
       break;
   }
 
